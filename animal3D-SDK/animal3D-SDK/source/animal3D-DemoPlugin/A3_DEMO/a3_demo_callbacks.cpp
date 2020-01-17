@@ -310,6 +310,7 @@ A3DYLIBSYMBOL void a3demoCB_windowActivate(a3_DemoState *demoState)
 {
 	// nothing really needs to be done here...
 	//	but it's here just in case
+
 }
 
 // window loses focus
@@ -392,6 +393,21 @@ A3DYLIBSYMBOL void a3demoCB_keyRelease(a3_DemoState *demoState, a3i32 virtualKey
 	a3keyboardSetState(demoState->keyboard, (a3_KeyboardKey)virtualKey, a3input_up);
 }
 
+bool setUpServer = false;
+bool clientOrServerQuestion = false;
+bool portCheck = false;
+bool maxClientsCheck = false;
+
+bool connected = false;
+
+char clientInput[512];
+int inputIndex = 0;
+char portInput[512];
+
+unsigned int maxClients;
+unsigned short serverPort;
+
+
 // ASCII key is pressed (immediately preceded by "any key" pressed call above)
 // NOTE: there is no release counterpart
 A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey)
@@ -403,6 +419,83 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 
 	// persistent state update
 	a3keyboardSetStateASCII(demoState->keyboard, (a3byte)asciiKey);
+
+	if (setUpServer)
+	{
+		if (clientOrServerQuestion)
+		{
+			switch (asciiKey)
+			{
+			case 's':
+				maxClientsCheck = true;
+				clientOrServerQuestion = false;
+				printf("Enter Max Clients \n");
+				inputIndex = 0;
+				break;
+			case 'S':
+				maxClientsCheck = true;
+				clientOrServerQuestion = false;
+				printf("Enter Max Clients \n");
+				inputIndex = 0;
+				break;
+			case 'c':
+				portCheck = true;
+				clientOrServerQuestion = false;
+				printf("Enter Server Port\n");
+				inputIndex = 0;
+				break;
+			case 'C':
+				portCheck = true;
+				clientOrServerQuestion = false;
+				printf("Enter Server Port\n");
+				inputIndex = 0;
+				break;
+			}
+		}
+
+
+		if (portCheck)
+		{
+			switch (asciiKey)
+			{
+			case '10':
+				portCheck = false;
+				serverPort = atoi(portInput);
+				printf("Server Port found");
+				printf(portInput);
+				printf("\n");
+				inputIndex = 0;
+				break;
+			default:
+				portInput[inputIndex] = asciiKey;
+				printf(portInput);
+				break;
+			}
+		}
+
+		if (maxClientsCheck)
+		{
+			switch (asciiKey)
+			{
+			case '10':
+				maxClientsCheck = false;
+				maxClients = atoi(clientInput);	
+				inputIndex = 0;
+				portCheck = true;
+				printf("Max Clients added : \n");
+				printf(clientInput);
+				printf("\n Enter Server Port\n");
+				break;
+			default:
+				clientInput[inputIndex] = asciiKey;
+				printf(clientInput);
+				break;
+			}
+		}
+
+		
+		return;
+	}
 
 	// handle special cases immediately
 	switch (asciiKey)
@@ -486,6 +579,12 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 		// update animation
 	case 'm':
 		demoState->updateAnimation = 1 - demoState->updateAnimation;
+		break;
+
+	case 'l':
+		printf("Entering server Setup.../n Client (c) or Server (s)?\n");
+		setUpServer = true;
+		clientOrServerQuestion = true;
 		break;
 	}
 
