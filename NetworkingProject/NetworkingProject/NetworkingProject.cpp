@@ -167,7 +167,7 @@ int main(void)
 						RakNet::BitStream bsOut;
 						bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
 
-						myPackage->string = str;
+						myPackage->string = rs;
 						myPackage->timeStamp = RakNet::GetTime();
 
 
