@@ -30,6 +30,8 @@
 
 #include "a3_dylib_config_export.h"
 #include "a3_DemoState.h"
+#include "RakNet/RakPeerInterface.h"
+#include "RakNet/MessageIdentifiers.h"
 
 
 #include <stdio.h>
@@ -154,6 +156,9 @@ extern "C"
 #endif	// __cplusplus
 
 
+
+RakNet::RakPeerInterface* peer;
+
 //-----------------------------------------------------------------------------
 // callback implementations
 
@@ -225,7 +230,7 @@ A3DYLIBSYMBOL a3_DemoState *a3demoCB_load(a3_DemoState *demoState, a3boolean hot
 		// scene objects
 		a3demo_initScene(demoState);
 	}
-
+	peer = RakNet::RakPeerInterface::GetInstance();
 	// return persistent state pointer
 	return demoState;
 }
@@ -260,8 +265,10 @@ A3DYLIBSYMBOL a3_DemoState *a3demoCB_unload(a3_DemoState *demoState, a3boolean h
 		// erase persistent state
 		free(demoState);
 		demoState = 0;
+
 	}
 
+	RakNet::RakPeerInterface::DestroyInstance(peer);
 	// return state pointer
 	return demoState;
 }
@@ -275,12 +282,66 @@ A3DYLIBSYMBOL a3i32 a3demoCB_display(a3_DemoState *demoState)
 	return 1;
 }
 
+
+RakNet::Packet* packet;
+
+bool connected = false;
+bool isServer = false;
+
+
 // window idles
 A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState *demoState)
 {
 	// perform any idle tasks, such as rendering
 	if (!demoState->exitFlag)
 	{
+		if (connected) {
+			for (packet = peer->Receive(); packet; peer->DeallocatePacket(packet), packet = peer->Receive())
+			{
+				switch (packet->data[0])
+				{
+				case ID_REMOTE_DISCONNECTION_NOTIFICATION:
+					printf("Another client has disconnected.\n");
+					break;
+				case ID_REMOTE_CONNECTION_LOST:
+					printf("Another client has lost the connection.\n");
+					break;
+				case ID_REMOTE_NEW_INCOMING_CONNECTION:
+					printf("Another client has connected.\n");
+					break;
+				case ID_CONNECTION_REQUEST_ACCEPTED:
+					printf("Our connection request has been accepted.\n");
+					break;
+				case ID_NEW_INCOMING_CONNECTION:
+					printf("A connection is incoming.\n");
+					break;
+				case ID_NO_FREE_INCOMING_CONNECTIONS:
+					printf("The server is full.\n");
+					break;
+				case ID_DISCONNECTION_NOTIFICATION:
+					if (isServer) {
+						printf("A client has disconnected.\n");
+					}
+					else {
+						printf("We have been disconnected.\n");
+					}
+					break;
+				case ID_CONNECTION_LOST:
+					if (isServer) {
+						printf("A client lost the connection.\n");
+					}
+					else {
+						printf("Connection lost.\n");
+					}
+					break;
+				default:
+					printf("Message with identifier %i has arrived.\n", packet->data[0]);
+					break;
+				}
+			}
+		}
+
+
 		if (a3timerUpdate(demoState->renderTimer) > 0)
 		{
 			// render timer ticked, update demo state and draw
@@ -398,14 +459,19 @@ bool clientOrServerQuestion = false;
 bool portCheck = false;
 bool maxClientsCheck = false;
 
-bool connected = false;
+bool ipCheck = false;
 
-char clientInput[512];
+
 int inputIndex = 0;
+char clientInput[512];
 char portInput[512];
+char ipInput[512];
 
 unsigned int maxClients;
 unsigned short serverPort;
+
+
+
 
 
 // ASCII key is pressed (immediately preceded by "any key" pressed call above)
@@ -422,33 +488,39 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 
 	if (setUpServer)
 	{
-		if (clientOrServerQuestion)
+		if (ipCheck)
 		{
 			switch (asciiKey)
 			{
-			case 's':
-				maxClientsCheck = true;
-				clientOrServerQuestion = false;
-				printf("Enter Max Clients \n");
-				inputIndex = 0;
+			case 13:
+				if (inputIndex == 0)
+				{				
+
+					strcpy(ipInput, "127.0.0.1");			
+					
+				}
+				printf("Starting the client.\n");
+				peer->Connect(ipInput, serverPort, 0, 0);
+				connected = true;
+				ipCheck = false;
 				break;
-			case 'S':
-				maxClientsCheck = true;
-				clientOrServerQuestion = false;
-				printf("Enter Max Clients \n");
-				inputIndex = 0;
+			case 8:
+				if (inputIndex - 1 >= 0)
+				{
+					inputIndex--;
+					ipInput[inputIndex] = (char)0;
+					printf("\r");
+					printf(ipInput);
+				}
 				break;
-			case 'c':
-				portCheck = true;
-				clientOrServerQuestion = false;
-				printf("Enter Server Port\n");
-				inputIndex = 0;
-				break;
-			case 'C':
-				portCheck = true;
-				clientOrServerQuestion = false;
-				printf("Enter Server Port\n");
-				inputIndex = 0;
+			default:
+				if (inputIndex + 1 < 512)
+				{
+					ipInput[inputIndex] = asciiKey;
+					printf("\r");
+					printf(ipInput);
+					inputIndex++;
+				}
 				break;
 			}
 		}
@@ -458,17 +530,48 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 		{
 			switch (asciiKey)
 			{
-			case '10':
+			case 13:
 				portCheck = false;
 				serverPort = atoi(portInput);
-				printf("Server Port found");
+				printf("\nServer Port found : ");
 				printf(portInput);
 				printf("\n");
 				inputIndex = 0;
+
+				if (isServer)
+				{
+					RakNet::SocketDescriptor sd(serverPort, 0);
+					peer->Startup(maxClients, &sd, 1);
+					printf("Starting the server.\n");
+					// We need to let the server accept incoming connections from the clients
+					peer->SetMaximumIncomingConnections(maxClients);
+
+				}
+				else
+				{
+					ipCheck = true;
+					printf("\nEnter server IP or hit enter for 127.0.0.1\n");
+
+				}
+
+				break;
+			case 8:
+				if (inputIndex - 1 >= 0)
+				{
+					inputIndex--;
+					portInput[inputIndex] = (char)0;
+					printf("\r");
+					printf(portInput);
+				}
 				break;
 			default:
-				portInput[inputIndex] = asciiKey;
-				printf(portInput);
+				if (inputIndex + 1 < 512)
+				{
+					portInput[inputIndex] = asciiKey;
+					printf("\r");
+					printf(portInput);
+					inputIndex++;
+				}
 				break;
 			}
 		}
@@ -477,22 +580,61 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 		{
 			switch (asciiKey)
 			{
-			case '10':
-				maxClientsCheck = false;
-				maxClients = atoi(clientInput);	
-				inputIndex = 0;
+			case 13:
 				portCheck = true;
-				printf("Max Clients added : \n");
+				maxClients = atoi(clientInput);	
+				printf("\nMax Clients added : \n");
 				printf(clientInput);
-				printf("\n Enter Server Port\n");
+				printf("\nEnter Server Port\n");
+				maxClientsCheck = false;
+				inputIndex = 0;
+				break;
+			case 8:
+				if (inputIndex - 1 >= 0)
+				{
+					inputIndex--;
+					clientInput[inputIndex] = (char)0;
+					printf("\r");
+					printf(portInput);
+				}
 				break;
 			default:
-				clientInput[inputIndex] = asciiKey;
-				printf(clientInput);
+				if (inputIndex + 1 < 512)
+				{
+					
+					clientInput[inputIndex] = asciiKey;
+					printf("\r");
+					printf(clientInput);
+					inputIndex++;
+				}
 				break;
 			}
 		}
 
+		if (clientOrServerQuestion)
+		{
+			switch (asciiKey)
+			{
+			case 's':
+			case 'S':
+				maxClientsCheck = true;
+				clientOrServerQuestion = false;
+				printf("Enter Max Clients \n");
+				inputIndex = 0;
+				isServer = false;
+				break;
+			case 'c':
+			case 'C':
+				portCheck = true;
+				clientOrServerQuestion = false;
+				printf("Enter Server Port\n");
+				inputIndex = 0;
+				RakNet::SocketDescriptor sd;
+				peer->Startup(1, &sd, 1);
+				isServer = false;
+				break;
+			}
+		}
 		
 		return;
 	}
@@ -582,7 +724,7 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 		break;
 
 	case 'l':
-		printf("Entering server Setup.../n Client (c) or Server (s)?\n");
+		printf("Entering server Setup...\n Client (c) or Server (s)?\n");
 		setUpServer = true;
 		clientOrServerQuestion = true;
 		break;
