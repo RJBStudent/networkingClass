@@ -22,6 +22,12 @@ enum GameMessages
 	ID_GAME_MESSAGE_1 = ID_USER_PACKET_ENUM + 1
 };
 
+struct UserInfo
+{
+	RakNet::SystemAddress userAddress;
+	RakNet::RakString username;
+};
+
 //Taken From http://www.jenkinssoftware.com/raknet/manual/creatingpackets.html
 #pragma pack(push, 1)
 struct Package
@@ -42,6 +48,10 @@ int main(void)
 	fgets(str, 512, stdin);
 
 	serverPort = atoi(str);
+	printf("UserName?\n");
+	fgets(str, 512, stdin);
+	RakNet::RakString myName;
+	myName = str;
 
 	printf("(C) or (S)erver?\n");
 	fgets(str, 512, stdin);
@@ -82,7 +92,7 @@ int main(void)
 
 	bool connected = false;
 	RakNet::SystemAddress addressConnected;
-	std::vector<RakNet::SystemAddress> clientsConnected;
+	std::vector<UserInfo> clientsConnected;
 	Package* myPackage = new Package();
 
 	while (1)
@@ -100,8 +110,12 @@ int main(void)
 				printf("Another client has lost the connection.\n");
 				break;
 			case ID_REMOTE_NEW_INCOMING_CONNECTION:
+			{
 				printf("Another client has connected.\n");
-				clientsConnected.push_back(packet->systemAddress);
+				UserInfo newUser;
+				newUser.userAddress = packet->systemAddress;
+				clientsConnected.push_back(newUser);
+			}
 				break;
 			case ID_CONNECTION_REQUEST_ACCEPTED:
 			{
@@ -122,8 +136,12 @@ int main(void)
 			}
 			break;
 			case ID_NEW_INCOMING_CONNECTION:
+			{
 				printf("A connection is incoming.\n");
-				clientsConnected.push_back(packet->systemAddress);
+				UserInfo newUser;
+				newUser.userAddress = packet->systemAddress;
+				clientsConnected.push_back(newUser);
+			}
 				break;
 			case ID_NO_FREE_INCOMING_CONNECTIONS:
 				printf("The server is full.\n");
@@ -131,8 +149,7 @@ int main(void)
 			case ID_DISCONNECTION_NOTIFICATION:
 				if (isServer) {
 					printf("A client has disconnected.\n");
-					std::vector<RakNet::SystemAddress>::iterator it = std::find(clientsConnected.begin(), clientsConnected.end(), packet->systemAddress);
-					clientsConnected.erase(it);
+					UserDisconnected(packet->systemAddress, clientsConnected);
 				}
 				else {
 					printf("We have been disconnected.\n");
@@ -141,8 +158,7 @@ int main(void)
 			case ID_CONNECTION_LOST:
 				if (isServer) {
 					printf("A client lost the connection.\n");
-					std::vector<RakNet::SystemAddress>::iterator it = std::find(clientsConnected.begin(), clientsConnected.end(), packet->systemAddress);
-					clientsConnected.erase(it);
+					UserDisconnected(packet->systemAddress, clientsConnected);
 				}
 				else {
 					printf("Connection lost.\n");
@@ -160,9 +176,9 @@ int main(void)
 				printf("%s %i\n", rs.C_String(), tStamp);
 				if (isServer)
 				{
-					for(RakNet::SystemAddress sa : clientsConnected)
+					for(UserInfo user : clientsConnected)
 					{
-						if (sa == packet->systemAddress)
+						if (user.userAddress == packet->systemAddress)
 							continue;
 						RakNet::BitStream bsOut;
 						bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
@@ -173,7 +189,7 @@ int main(void)
 
 						bsOut.Write(myPackage->string);
 						bsOut.Write(myPackage->timeStamp);
-						peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa, false);
+						peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, user.userAddress, false);
 					}
 				}
 			}
@@ -204,4 +220,20 @@ int main(void)
 	RakNet::RakPeerInterface::DestroyInstance(peer);
 
 	return 0;
+}
+
+
+void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo> userList)
+{
+	std::vector<UserInfo>::iterator it = userList.begin;
+	while (it != userList.end)
+	{
+		if (it->userAddress == addressDisconnected)
+		{
+			userList.erase(it);
+			return;
+		};
+		it++;
+	}
+	
 }
