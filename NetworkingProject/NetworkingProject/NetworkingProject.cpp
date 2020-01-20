@@ -19,7 +19,8 @@ unsigned short serverPort = 60000;
 
 enum GameMessages
 {
-	ID_GAME_MESSAGE_1 = ID_USER_PACKET_ENUM + 1
+	ID_GAME_MESSAGE_1 = ID_USER_PACKET_ENUM + 1,
+	ID_CLIENT_GREETING,
 };
 
 //Taken From http://www.jenkinssoftware.com/raknet/manual/creatingpackets.html
@@ -34,6 +35,7 @@ struct Package
 int main(void)
 {
 	char str[512];
+	char userName[512];
 	RakNet::RakPeerInterface* peer = RakNet::RakPeerInterface::GetInstance();
 	bool isServer;
 	RakNet::Packet* packet;
@@ -44,12 +46,14 @@ int main(void)
 	serverPort = atoi(str);
 
 	printf("(C) or (S)erver?\n");
-	fgets(str, 512, stdin);
 	if ((str[0] == 'c') || (str[0] == 'C'))
 	{
+		printf("Enter Username?\n");
+		fgets(userName, 512, stdin);		
 		RakNet::SocketDescriptor sd;
 		peer->Startup(1, &sd, 1);
 		isServer = false;
+
 	}
 	else {
 		printf("Max number of Clients?\n");
@@ -77,6 +81,7 @@ int main(void)
 		}
 		printf("Starting the client.\n");
 		peer->Connect(str, serverPort, 0, 0);
+		
 
 	}
 
@@ -107,17 +112,11 @@ int main(void)
 			{
 				printf("Our connection request has been accepted.\n");
 
-				// Use a BitStream to write a custom user message
-				// Bitstreams are easier to use than sending casted structures, and handle endian swapping automatically
-				//RakNet::BitStream bsOut;
-				////bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
-
-				//printf("What's your incoming gamer message?\n");
-				//fgets(str, 512, stdin);
-
-				//bsOut.Write(str);
+				RakNet::BitStream bsOut;
+				bsOut.Write((RakNet::MessageID)ID_CLIENT_GREETING);
+				bsOut.Write(userName);
+				peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
 				addressConnected = packet->systemAddress;
-				//peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
 				connected = true;
 			}
 			break;
@@ -176,6 +175,15 @@ int main(void)
 						peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa, false);
 					}
 				}
+			}
+			break;
+			case ID_CLIENT_GREETING:
+			{
+				char input[512];
+				RakNet::BitStream bsIn(packet->data, packet->length, false);
+				bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+				bsIn.Read(input);
+				printf("Welcome %s!/n", input);
 			}
 			break;
 			default:
