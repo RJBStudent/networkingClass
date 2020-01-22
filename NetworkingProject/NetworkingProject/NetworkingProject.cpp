@@ -23,6 +23,12 @@ enum GameMessages
 	ID_CLIENT_GREETING,
 };
 
+struct UserInfo
+{
+	RakNet::SystemAddress addressConnected;
+	RakNet::RakString userName;
+};
+
 //Taken From http://www.jenkinssoftware.com/raknet/manual/creatingpackets.html
 #pragma pack(push, 1)
 struct Package
@@ -87,7 +93,7 @@ int main(void)
 
 	bool connected = false;
 	RakNet::SystemAddress addressConnected;
-	std::vector<RakNet::SystemAddress> clientsConnected;
+	std::vector<UserInfo> clientInfo;
 	Package* myPackage = new Package();
 
 	while (1)
@@ -104,25 +110,33 @@ int main(void)
 			case ID_REMOTE_CONNECTION_LOST:
 				printf("Another client has lost the connection.\n");
 				break;
-			case ID_REMOTE_NEW_INCOMING_CONNECTION:
-				printf("Another client has connected.\n");
-				clientsConnected.push_back(packet->systemAddress);
+			case ID_REMOTE_NEW_INCOMING_CONNECTION: 
+				{
+					printf("Another client has connected.\n");
+					UserInfo info;
+					info.addressConnected = packet->systemAddress;
+					clientInfo.push_back(info);
+				}
 				break;
 			case ID_CONNECTION_REQUEST_ACCEPTED:
-			{
-				printf("Our connection request has been accepted.\n");
+				{
+					printf("Our connection request has been accepted.\n");
 
-				RakNet::BitStream bsOut;
-				bsOut.Write((RakNet::MessageID)ID_CLIENT_GREETING);
-				bsOut.Write(userName);
-				peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
-				addressConnected = packet->systemAddress;
-				connected = true;
-			}
-			break;
+					RakNet::BitStream bsOut;
+					bsOut.Write((RakNet::MessageID)ID_CLIENT_GREETING);
+					bsOut.Write(userName);
+					peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
+					addressConnected = packet->systemAddress;
+					connected = true;
+				}
+				break;
 			case ID_NEW_INCOMING_CONNECTION:
-				printf("A connection is incoming.\n");
-				clientsConnected.push_back(packet->systemAddress);
+				{
+					printf("A connection is incoming.\n");
+					UserInfo info;
+					info.addressConnected = packet->systemAddress;
+					clientInfo.push_back(info);
+				}
 				break;
 			case ID_NO_FREE_INCOMING_CONNECTIONS:
 				printf("The server is full.\n");
@@ -130,8 +144,8 @@ int main(void)
 			case ID_DISCONNECTION_NOTIFICATION:
 				if (isServer) {
 					printf("A client has disconnected.\n");
-					std::vector<RakNet::SystemAddress>::iterator it = std::find(clientsConnected.begin(), clientsConnected.end(), packet->systemAddress);
-					clientsConnected.erase(it);
+					std::vector<UserInfo>::iterator it = std::find(clientInfo.begin(), clientInfo.end(), packet->systemAddress);
+					clientInfo.erase(it);
 				}
 				else {
 					printf("We have been disconnected.\n");
@@ -140,8 +154,8 @@ int main(void)
 			case ID_CONNECTION_LOST:
 				if (isServer) {
 					printf("A client lost the connection.\n");
-					std::vector<RakNet::SystemAddress>::iterator it = std::find(clientsConnected.begin(), clientsConnected.end(), packet->systemAddress);
-					clientsConnected.erase(it);
+					std::vector<UserInfo>::iterator it = std::find(clientInfo.begin(), clientInfo.end(), packet->systemAddress);
+					clientInfo.erase(it);
 				}
 				else {
 					printf("Connection lost.\n");
@@ -159,9 +173,9 @@ int main(void)
 				printf("%s %i\n", rs.C_String(), tStamp);
 				if (isServer)
 				{
-					for(RakNet::SystemAddress sa : clientsConnected)
+					for(UserInfo sa : clientInfo)
 					{
-						if (sa == packet->systemAddress)
+						if (sa.addressConnected == packet->systemAddress)
 							continue;
 						RakNet::BitStream bsOut;
 						bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
@@ -172,7 +186,7 @@ int main(void)
 
 						bsOut.Write(myPackage->string);
 						bsOut.Write(myPackage->timeStamp);
-						peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa, false);
+						peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.addressConnected, false);
 					}
 				}
 			}
@@ -183,7 +197,13 @@ int main(void)
 				RakNet::BitStream bsIn(packet->data, packet->length, false);
 				bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 				bsIn.Read(input);
-				printf("Welcome %s!/n", input);
+
+				RakNet::BitStream bsOut;
+				bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
+				bsOut.Write("Welcome ");
+				bsOut.Write(input);
+				bsOut.Write("!\n");
+				//printf("Welcome %s!/n", input);
 			}
 			break;
 			default:
