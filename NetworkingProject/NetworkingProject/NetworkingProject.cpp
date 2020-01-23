@@ -19,7 +19,8 @@ unsigned short serverPort = 60000;
 
 enum GameMessages
 {
-	ID_GAME_MESSAGE_1 = ID_USER_PACKET_ENUM + 1
+	ID_GAME_MESSAGE_1 = ID_USER_PACKET_ENUM + 1,
+	ID_CLIENT_GREETING,
 };
 
 struct UserInfo
@@ -40,6 +41,7 @@ struct Package
 int main(void)
 {
 	char str[512];
+	char userName[512];
 	RakNet::RakPeerInterface* peer = RakNet::RakPeerInterface::GetInstance();
 	bool isServer;
 	RakNet::Packet* packet;
@@ -54,12 +56,14 @@ int main(void)
 	myName = str;
 
 	printf("(C) or (S)erver?\n");
-	fgets(str, 512, stdin);
 	if ((str[0] == 'c') || (str[0] == 'C'))
 	{
+		printf("Enter Username?\n");
+		fgets(userName, 512, stdin);		
 		RakNet::SocketDescriptor sd;
 		peer->Startup(1, &sd, 1);
 		isServer = false;
+
 	}
 	else {
 		printf("Max number of Clients?\n");
@@ -87,6 +91,7 @@ int main(void)
 		}
 		printf("Starting the client.\n");
 		peer->Connect(str, serverPort, 0, 0);
+		
 
 	}
 
@@ -118,23 +123,17 @@ int main(void)
 			}
 				break;
 			case ID_CONNECTION_REQUEST_ACCEPTED:
-			{
-				printf("Our connection request has been accepted.\n");
+				{
+					printf("Our connection request has been accepted.\n");
 
-				// Use a BitStream to write a custom user message
-				// Bitstreams are easier to use than sending casted structures, and handle endian swapping automatically
-				//RakNet::BitStream bsOut;
-				////bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
-
-				//printf("What's your incoming gamer message?\n");
-				//fgets(str, 512, stdin);
-
-				//bsOut.Write(str);
-				addressConnected = packet->systemAddress;
-				//peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
-				connected = true;
-			}
-			break;
+					RakNet::BitStream bsOut;
+					bsOut.Write((RakNet::MessageID)ID_CLIENT_GREETING);
+					bsOut.Write(userName);
+					peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
+					addressConnected = packet->systemAddress;
+					connected = true;
+				}
+				break;
 			case ID_NEW_INCOMING_CONNECTION:
 			{
 				printf("A connection is incoming.\n");
@@ -176,9 +175,9 @@ int main(void)
 				printf("%s %i\n", rs.C_String(), tStamp);
 				if (isServer)
 				{
-					for(UserInfo user : clientsConnected)
+					for(UserInfo sa : clientsConnected)
 					{
-						if (user.userAddress == packet->systemAddress)
+						if (sa.userAddress== packet->systemAddress)
 							continue;
 						RakNet::BitStream bsOut;
 						bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
@@ -189,9 +188,24 @@ int main(void)
 
 						bsOut.Write(myPackage->string);
 						bsOut.Write(myPackage->timeStamp);
-						peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, user.userAddress, false);
+						peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 					}
 				}
+			}
+			break;
+			case ID_CLIENT_GREETING:
+			{
+				char input[512];
+				RakNet::BitStream bsIn(packet->data, packet->length, false);
+				bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
+				bsIn.Read(input);
+
+				RakNet::BitStream bsOut;
+				bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
+				bsOut.Write("Welcome ");
+				bsOut.Write(input);
+				bsOut.Write("!\n");
+				//printf("Welcome %s!/n", input);
 			}
 			break;
 			default:
