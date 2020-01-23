@@ -17,6 +17,9 @@
 unsigned int maxClients = 10;
 unsigned short serverPort = 60000;
 
+
+
+
 enum GameMessages
 {
 	ID_GAME_MESSAGE_1 = ID_USER_PACKET_ENUM + 1,
@@ -28,6 +31,7 @@ struct UserInfo
 	RakNet::SystemAddress userAddress;
 	RakNet::RakString username;
 };
+void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo> userList);
 
 //Taken From http://www.jenkinssoftware.com/raknet/manual/creatingpackets.html
 #pragma pack(push, 1)
@@ -50,12 +54,9 @@ int main(void)
 	fgets(str, 512, stdin);
 
 	serverPort = atoi(str);
-	printf("UserName?\n");
-	fgets(str, 512, stdin);
-	RakNet::RakString myName;
-	myName = str;
 
 	printf("(C) or (S)erver?\n");
+	fgets(str, 512, stdin);
 	if ((str[0] == 'c') || (str[0] == 'C'))
 	{
 		printf("Enter Username?\n");
@@ -86,7 +87,7 @@ int main(void)
 	else {
 		printf("Enter server IP or hit enter for 127.0.0.1\n");
 		fgets(str, 512, stdin);
-		if (str[0] == 0) {
+		if (str[0] == 10) {
 			strcpy(str, "127.0.0.1");
 		}
 		printf("Starting the client.\n");
@@ -172,7 +173,7 @@ int main(void)
 				bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 				bsIn.Read(rs);
 				bsIn.Read(tStamp);
-				printf("%s %i\n", rs.C_String(), tStamp);
+				printf("%s %i\n", rs.C_String(), (int)tStamp);
 				if (isServer)
 				{
 					for(UserInfo sa : clientsConnected)
@@ -205,6 +206,25 @@ int main(void)
 				bsOut.Write("Welcome ");
 				bsOut.Write(input);
 				bsOut.Write("!\n");
+				for (UserInfo sa : clientsConnected)
+				{
+					if (sa.userAddress == packet->systemAddress)
+					{
+						RakNet::BitStream bsOutSameUser;
+						bsOutSameUser.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
+						bsOutSameUser.Write("Thanks for joining ");
+						bsOutSameUser.Write(input);
+						bsOutSameUser.Write("!\n");
+						sa.username = input;
+						peer->Send(&bsOutSameUser, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
+					}
+					else
+					{
+						peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
+					}
+				}
+
+			
 				//printf("Welcome %s!/n", input);
 			}
 			break;
@@ -239,8 +259,8 @@ int main(void)
 
 void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo> userList)
 {
-	std::vector<UserInfo>::iterator it = userList.begin;
-	while (it != userList.end)
+	std::vector<UserInfo>::iterator it = userList.begin();
+	while (it != userList.end())
 	{
 		if (it->userAddress == addressDisconnected)
 		{
