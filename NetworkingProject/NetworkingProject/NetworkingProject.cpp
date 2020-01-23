@@ -101,8 +101,25 @@ int main(void)
 	std::vector<UserInfo> clientsConnected;
 	Package* myPackage = new Package();
 
+	unsigned char keys[256];
+
 	while (1)
 	{	
+		if (!isServer && connected)
+		{
+			if (GetKeyboardState(keys))
+			{
+				for (int k = 32; k <= 127; k++)
+				{
+					if (keys[k])
+					{
+						printf("%c", k);
+					}
+				}
+			}
+
+		}
+
 
 		for (packet = peer->Receive(); packet; peer->DeallocatePacket(packet), packet = peer->Receive())
 		{
@@ -234,21 +251,7 @@ int main(void)
 			}
 		}
 
-		if (!isServer && connected)
-		{
-			RakNet::BitStream bsOut;
-			bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
-
-			printf("What's your incoming gamer message?\n");
-			fgets(str, 512, stdin);
-			myPackage->string = str;
-			myPackage->timeStamp = RakNet::GetTime();
-
-			
-			bsOut.Write(myPackage->string);
-			bsOut.Write(myPackage->timeStamp);
-			peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, addressConnected, false);
-		}
+		
 	}
 
 	RakNet::RakPeerInterface::DestroyInstance(peer);
