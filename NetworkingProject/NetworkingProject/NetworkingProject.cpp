@@ -175,9 +175,9 @@ int main(void)
 				printf("%s %i\n", rs.C_String(), tStamp);
 				if (isServer)
 				{
-					for(UserInfo sa : clientInfo)
+					for(UserInfo sa : clientsConnected)
 					{
-						if (sa.addressConnected == packet->systemAddress)
+						if (sa.userAddress== packet->systemAddress)
 							continue;
 						RakNet::BitStream bsOut;
 						bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
@@ -188,7 +188,7 @@ int main(void)
 
 						bsOut.Write(myPackage->string);
 						bsOut.Write(myPackage->timeStamp);
-						peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.addressConnected, false);
+						peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 					}
 				}
 			}
