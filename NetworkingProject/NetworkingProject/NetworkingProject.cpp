@@ -29,6 +29,14 @@ struct UserInfo
 	RakNet::RakString username;
 };
 
+struct UserMessage
+{
+	int messageId;
+	char message[512];
+};
+
+void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo> userList);
+
 //Taken From http://www.jenkinssoftware.com/raknet/manual/creatingpackets.html
 #pragma pack(push, 1)
 struct Package
@@ -146,6 +154,7 @@ int main(void)
 				printf("The server is full.\n");
 				break;
 			case ID_DISCONNECTION_NOTIFICATION:
+				
 				if (isServer) {
 					printf("A client has disconnected.\n");
 					UserDisconnected(packet->systemAddress, clientsConnected);
@@ -153,6 +162,7 @@ int main(void)
 				else {
 					printf("We have been disconnected.\n");
 				}
+				
 				break;
 			case ID_CONNECTION_LOST:
 				if (isServer) {
@@ -205,6 +215,19 @@ int main(void)
 				bsOut.Write("Welcome ");
 				bsOut.Write(input);
 				bsOut.Write("!\n");
+				for (UserInfo sa : clientsConnected)
+				{
+					if (sa.userAddress == packet->systemAddress)
+					{
+						sa.username = input;
+					}
+					else
+					{
+						UserMessage myMessage;
+						myMessage.messageId = ID_GAME_MESSAGE_1;
+						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
+					}
+				}
 				//printf("Welcome %s!/n", input);
 			}
 			break;
@@ -239,8 +262,8 @@ int main(void)
 
 void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo> userList)
 {
-	std::vector<UserInfo>::iterator it = userList.begin;
-	while (it != userList.end)
+	std::vector<UserInfo>::iterator it = userList.begin();
+	while (it != userList.end())
 	{
 		if (it->userAddress == addressDisconnected)
 		{
