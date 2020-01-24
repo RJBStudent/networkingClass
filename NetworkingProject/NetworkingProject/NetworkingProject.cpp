@@ -37,6 +37,7 @@ void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<Use
 #pragma pack(push, 1)
 struct Package
 {
+	char name[512];
 	RakNet::RakString string;
 	RakNet::Time timeStamp;
 };
@@ -101,21 +102,47 @@ int main(void)
 	std::vector<UserInfo> clientsConnected;
 	Package* myPackage = new Package();
 
-	unsigned char keys[256];
+	unsigned char keyInput[512];
+	int keyIndex = 0;
 
 	while (1)
 	{	
 		if (!isServer && connected)
-		{
-			if (GetKeyboardState(keys))
+		{			
+			
+			for (int k = 32; k <= 127; k++)
 			{
-				for (int k = 32; k <= 127; k++)
+				if (GetAsyncKeyState(k) & 0x0001)
 				{
-					if (keys[k])
+					printf("%c", k);
+					if (keyIndex <= 512)
 					{
-						printf("%c", k);
+						keyInput[keyIndex] = k;
+						keyIndex++;
 					}
 				}
+			}
+
+			if (GetAsyncKeyState(8) & 0x0001)
+			{
+				if (keyIndex-1 <= 0)
+				{
+					keyInput[keyIndex] = 0;
+					keyIndex--;
+				}
+			}
+			if (GetAsyncKeyState(13) & 0x0001)
+			{
+				RakNet::BitStream bsOut;
+				bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
+				myPackage->string =keyInput;
+				myPackage->timeStamp = RakNet::GetTime();
+
+				bsOut.Write(myPackage->string);
+				bsOut.Write(myPackage->timeStamp);
+				peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, addressConnected, false);
+
+				keyIndex = 0;
 			}
 
 		}
@@ -198,11 +225,10 @@ int main(void)
 						if (sa.userAddress== packet->systemAddress)
 							continue;
 						RakNet::BitStream bsOut;
-						bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
+						bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);						
 
-						myPackage->string = rs;
+						myPackage->string = sa.username + rs;
 						myPackage->timeStamp = RakNet::GetTime();
-
 
 						bsOut.Write(myPackage->string);
 						bsOut.Write(myPackage->timeStamp);
@@ -220,18 +246,14 @@ int main(void)
 
 				RakNet::BitStream bsOut;
 				bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
-				bsOut.Write("Welcome ");
 				bsOut.Write(input);
-				bsOut.Write("!\n");
 				for (UserInfo sa : clientsConnected)
 				{
 					if (sa.userAddress == packet->systemAddress)
 					{
 						RakNet::BitStream bsOutSameUser;
 						bsOutSameUser.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
-						bsOutSameUser.Write("Thanks for joining ");
 						bsOutSameUser.Write(input);
-						bsOutSameUser.Write("!\n");
 						sa.username = input;
 						peer->Send(&bsOutSameUser, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 					}
