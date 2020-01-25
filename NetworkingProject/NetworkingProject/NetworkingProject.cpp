@@ -10,6 +10,7 @@
 #include "RakNet/GetTime.h"
 #include <vector>
 #include <algorithm>
+#include <string>
 
 //#define MAX_CLIENTS 10
 //#define SERVER_PORT 60000
@@ -29,7 +30,7 @@ enum GameMessages
 struct UserInfo
 {
 	RakNet::SystemAddress userAddress;
-	RakNet::RakString username;
+	char username[512];
 };
 void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo> userList);
 
@@ -38,8 +39,6 @@ struct UserMessage
 	int messageId;
 	char message[512];
 };
-
-void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo> userList);
 
 //Taken From http://www.jenkinssoftware.com/raknet/manual/creatingpackets.html
 #pragma pack(push, 1)
@@ -257,10 +256,6 @@ int main(void)
 				RakNet::BitStream bsOut;
 				bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
 				bsOut.Write(input);
-						UserMessage myMessage;
-						myMessage.messageId = ID_GAME_MESSAGE_1;
-						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
-					{
 				for (UserInfo sa : clientsConnected)
 				{
 					if (sa.userAddress == packet->systemAddress)
@@ -273,6 +268,12 @@ int main(void)
 					}
 					else
 					{
+						UserMessage myMessage;
+						myMessage.messageId = ID_GAME_MESSAGE_1;
+						std::string buh = "steve jobs died of ligmaballs";
+						myMessage.message = buh.c_str();
+						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
+						
 					}
 				}
 
