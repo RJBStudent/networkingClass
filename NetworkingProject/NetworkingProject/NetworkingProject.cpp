@@ -36,7 +36,7 @@ void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<Use
 
 struct UserMessage
 {
-	int messageId;
+	int messageId = 0;
 	char message[512];
 };
 
@@ -220,28 +220,21 @@ int main(void)
 			case ID_GAME_MESSAGE_1:
 			{
 				
-				RakNet::RakString rs;
-				RakNet::Time tStamp;
 				RakNet::BitStream bsIn(packet->data, packet->length, false);
-				bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
-				bsIn.Read(rs);
-				bsIn.Read(tStamp);
-				printf("%s %i\n", rs.C_String(), (int)tStamp);
+				UserMessage incommingMessage;
+				bsIn.Read(incommingMessage);
+				printf("%s", incommingMessage.message);
 				if (isServer)
 				{
 					for(UserInfo sa : clientsConnected)
 					{
 						if (sa.userAddress== packet->systemAddress)
 							continue;
-						RakNet::BitStream bsOut;
-						bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);						
-
-						myPackage->string = sa.username + rs;
-						myPackage->timeStamp = RakNet::GetTime();
-
-						bsOut.Write(myPackage->string);
-						bsOut.Write(myPackage->timeStamp);
-						peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
+						char* message = incommingMessage.message;						
+						UserMessage myMessage;
+						myMessage.messageId = ID_GAME_MESSAGE_1;
+						strncpy(myMessage.message, message, sizeof(message));
+						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 					}
 				}
 			}
@@ -260,18 +253,20 @@ int main(void)
 				{
 					if (sa.userAddress == packet->systemAddress)
 					{
-						RakNet::BitStream bsOutSameUser;
-						bsOutSameUser.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
-						bsOutSameUser.Write(input);
-						sa.username = input;
-						peer->Send(&bsOutSameUser, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
+
+						std::string message = "You have connected";
+						UserMessage myMessage;
+						myMessage.messageId = ID_GAME_MESSAGE_1;
+						strncpy(myMessage.message, message.c_str(), sizeof(message));
+						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 					}
 					else
 					{
+						char* message = sa.username;
+						strcat(message, " has joined!");
 						UserMessage myMessage;
 						myMessage.messageId = ID_GAME_MESSAGE_1;
-						std::string buh = "steve jobs died of ligmaballs";
-						myMessage.message = buh.c_str();
+						strncpy(myMessage.message, message, sizeof(message));
 						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 						
 					}
