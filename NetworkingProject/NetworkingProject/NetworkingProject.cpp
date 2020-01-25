@@ -10,12 +10,16 @@
 #include "RakNet/GetTime.h"
 #include <vector>
 #include <algorithm>
+#include <string>
 
 //#define MAX_CLIENTS 10
 //#define SERVER_PORT 60000
 
 unsigned int maxClients = 10;
 unsigned short serverPort = 60000;
+
+
+
 
 enum GameMessages
 {
@@ -26,8 +30,9 @@ enum GameMessages
 struct UserInfo
 {
 	RakNet::SystemAddress userAddress;
-	RakNet::RakString username;
+	char username[512];
 };
+void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo> userList);
 
 struct UserMessage
 {
@@ -35,12 +40,11 @@ struct UserMessage
 	char message[512];
 };
 
-void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo> userList);
-
 //Taken From http://www.jenkinssoftware.com/raknet/manual/creatingpackets.html
 #pragma pack(push, 1)
 struct Package
 {
+	char name[512];
 	RakNet::RakString string;
 	RakNet::Time timeStamp;
 };
@@ -58,12 +62,9 @@ int main(void)
 	fgets(str, 512, stdin);
 
 	serverPort = atoi(str);
-	printf("UserName?\n");
-	fgets(str, 512, stdin);
-	RakNet::RakString myName;
-	myName = str;
 
 	printf("(C) or (S)erver?\n");
+	fgets(str, 512, stdin);
 	if ((str[0] == 'c') || (str[0] == 'C'))
 	{
 		printf("Enter Username?\n");
@@ -94,7 +95,7 @@ int main(void)
 	else {
 		printf("Enter server IP or hit enter for 127.0.0.1\n");
 		fgets(str, 512, stdin);
-		if (str[0] == 0) {
+		if (str[0] == 10) {
 			strcpy(str, "127.0.0.1");
 		}
 		printf("Starting the client.\n");
@@ -108,8 +109,51 @@ int main(void)
 	std::vector<UserInfo> clientsConnected;
 	Package* myPackage = new Package();
 
+	unsigned char keyInput[512];
+	int keyIndex = 0;
+
 	while (1)
 	{	
+		if (!isServer && connected)
+		{			
+			
+			for (int k = 32; k <= 127; k++)
+			{
+				if (GetAsyncKeyState(k) & 0x0001)
+				{
+					printf("%c", k);
+					if (keyIndex <= 512)
+					{
+						keyInput[keyIndex] = k;
+						keyIndex++;
+					}
+				}
+			}
+
+			if (GetAsyncKeyState(8) & 0x0001)
+			{
+				if (keyIndex-1 <= 0)
+				{
+					keyInput[keyIndex] = 0;
+					keyIndex--;
+				}
+			}
+			if (GetAsyncKeyState(13) & 0x0001)
+			{
+				RakNet::BitStream bsOut;
+				bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
+				myPackage->string =keyInput;
+				myPackage->timeStamp = RakNet::GetTime();
+
+				bsOut.Write(myPackage->string);
+				bsOut.Write(myPackage->timeStamp);
+				peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, addressConnected, false);
+
+				keyIndex = 0;
+			}
+
+		}
+
 
 		for (packet = peer->Receive(); packet; peer->DeallocatePacket(packet), packet = peer->Receive())
 		{
@@ -182,7 +226,7 @@ int main(void)
 				bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 				bsIn.Read(rs);
 				bsIn.Read(tStamp);
-				printf("%s %i\n", rs.C_String(), tStamp);
+				printf("%s %i\n", rs.C_String(), (int)tStamp);
 				if (isServer)
 				{
 					for(UserInfo sa : clientsConnected)
@@ -190,11 +234,10 @@ int main(void)
 						if (sa.userAddress== packet->systemAddress)
 							continue;
 						RakNet::BitStream bsOut;
-						bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
+						bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);						
 
-						myPackage->string = rs;
+						myPackage->string = sa.username + rs;
 						myPackage->timeStamp = RakNet::GetTime();
-
 
 						bsOut.Write(myPackage->string);
 						bsOut.Write(myPackage->timeStamp);
@@ -212,22 +255,29 @@ int main(void)
 
 				RakNet::BitStream bsOut;
 				bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
-				bsOut.Write("Welcome ");
 				bsOut.Write(input);
-				bsOut.Write("!\n");
 				for (UserInfo sa : clientsConnected)
 				{
 					if (sa.userAddress == packet->systemAddress)
 					{
+						RakNet::BitStream bsOutSameUser;
+						bsOutSameUser.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
+						bsOutSameUser.Write(input);
 						sa.username = input;
+						peer->Send(&bsOutSameUser, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 					}
 					else
 					{
 						UserMessage myMessage;
 						myMessage.messageId = ID_GAME_MESSAGE_1;
+						std::string buh = "steve jobs died of ligmaballs";
+						myMessage.message = buh.c_str();
 						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
+						
 					}
 				}
+
+			
 				//printf("Welcome %s!/n", input);
 			}
 			break;
@@ -237,21 +287,7 @@ int main(void)
 			}
 		}
 
-		if (!isServer && connected)
-		{
-			RakNet::BitStream bsOut;
-			bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
-
-			printf("What's your incoming gamer message?\n");
-			fgets(str, 512, stdin);
-			myPackage->string = str;
-			myPackage->timeStamp = RakNet::GetTime();
-
-			
-			bsOut.Write(myPackage->string);
-			bsOut.Write(myPackage->timeStamp);
-			peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, addressConnected, false);
-		}
+		
 	}
 
 	RakNet::RakPeerInterface::DestroyInstance(peer);
