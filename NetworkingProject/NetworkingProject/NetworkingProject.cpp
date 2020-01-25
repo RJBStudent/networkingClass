@@ -36,6 +36,7 @@ void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<Use
 
 struct UserMessage
 {
+public:
 	int messageId;
 	char message[512];
 };
@@ -263,7 +264,7 @@ int main(void)
 						RakNet::BitStream bsOutSameUser;
 						bsOutSameUser.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
 						bsOutSameUser.Write(input);
-						sa.username = input;
+						strncpy(sa.username, input, sizeof(input));
 						peer->Send(&bsOutSameUser, HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 					}
 					else
@@ -271,7 +272,7 @@ int main(void)
 						UserMessage myMessage;
 						myMessage.messageId = ID_GAME_MESSAGE_1;
 						std::string buh = "steve jobs died of ligmaballs";
-						myMessage.message = buh.c_str();
+						strncpy(myMessage.message, buh.c_str(), sizeof(buh));
 						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 						
 					}
