@@ -27,18 +27,22 @@ enum GameMessages
 	ID_CLIENT_GREETING,
 };
 
+#pragma pack(push, 1)
 struct UserInfo
 {
 	RakNet::SystemAddress userAddress;
 	char username[512];
 };
+#pragma pack(pop)
 void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo> userList);
 
+#pragma pack(push, 1)
 struct UserMessage
 {
 	int messageId = 0;
 	char message[512];
 };
+#pragma pack(pop)
 
 //Taken From http://www.jenkinssoftware.com/raknet/manual/creatingpackets.html
 #pragma pack(push, 1)
@@ -109,7 +113,8 @@ int main(void)
 	std::vector<UserInfo> clientsConnected;
 	Package* myPackage = new Package();
 
-	unsigned char keyInput[512];
+	char keyInput[512];
+	memset(keyInput, 0, 512);
 	int keyIndex = 0;
 
 	while (1)
@@ -134,22 +139,21 @@ int main(void)
 			{
 				if (keyIndex-1 <= 0)
 				{
-					keyInput[keyIndex] = 0;
+					keyInput[keyIndex] = 32;
 					keyIndex--;
 				}
 			}
-			if (GetAsyncKeyState(13) & 0x0001)
+			if (GetAsyncKeyState(13) & 0x0001 || GetAsyncKeyState(10) & 0x0001)
 			{
-				RakNet::BitStream bsOut;
-				bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
-				myPackage->string =keyInput;
-				myPackage->timeStamp = RakNet::GetTime();
+				printf("\n");
+				UserMessage myMessage;
 
-				bsOut.Write(myPackage->string);
-				bsOut.Write(myPackage->timeStamp);
-				peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, addressConnected, false);
-
+				myMessage.messageId = ID_GAME_MESSAGE_1;
+				strcpy(myMessage.message, keyInput);
+				peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, addressConnected, false);
 				keyIndex = 0;
+				memset(keyInput, 0, 512);
+
 			}
 
 		}
@@ -220,22 +224,30 @@ int main(void)
 			case ID_GAME_MESSAGE_1:
 			{
 				
-				RakNet::BitStream bsIn(packet->data, packet->length, false);
-				UserMessage incommingMessage;
-				bsIn.Read(incommingMessage);
-				printf("%s", incommingMessage.message);
+				//RakNet::BitStream bsIn(packet->data, packet->length, false);
+				
+				UserMessage* incommingMessage = (UserMessage*)packet->data;
+				
 				if (isServer)
 				{
 					for(UserInfo sa : clientsConnected)
 					{
-						if (sa.userAddress== packet->systemAddress)
+						if (sa.userAddress == packet->systemAddress)
+						{
+							printf("\n%s: %s", sa.username, incommingMessage->message);
 							continue;
-						char* message = incommingMessage.message;						
+						}
+						char message[512];
 						UserMessage myMessage;
 						myMessage.messageId = ID_GAME_MESSAGE_1;
-						strncpy(myMessage.message, message, sizeof(message));
+						strcat(myMessage.message, sa.username + (char)" ");
+						strcpy(myMessage.message, incommingMessage->message);
 						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 					}
+				}
+				else
+				{
+					printf("\n: %s", incommingMessage->message);
 				}
 			}
 			break;
@@ -246,14 +258,12 @@ int main(void)
 				bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 				bsIn.Read(input);
 
-				RakNet::BitStream bsOut;
-				bsOut.Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
-				bsOut.Write(input);
 				for (UserInfo sa : clientsConnected)
 				{
 					if (sa.userAddress == packet->systemAddress)
 					{
-
+						strncpy(sa.username, input, sizeof(input));
+						printf("Sending Respone to user.. %s", input);
 						std::string message = "You have connected";
 						UserMessage myMessage;
 						myMessage.messageId = ID_GAME_MESSAGE_1;
@@ -262,8 +272,8 @@ int main(void)
 					}
 					else
 					{
-						char* message = sa.username;
-						strcat(message, " has joined!");
+						char message[512];
+						std::strcat(message, sa.username + (char)" has joined!");
 						UserMessage myMessage;
 						myMessage.messageId = ID_GAME_MESSAGE_1;
 						strncpy(myMessage.message, message, sizeof(message));
