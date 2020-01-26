@@ -244,7 +244,7 @@ int main(void)
 						char message[512];
 						UserMessage myMessage;
 						myMessage.messageId = ID_GAME_MESSAGE_1;
-						strcat(myMessage.username, sa.username);
+						strcpy(myMessage.username, incommingMessage->username);
 						strcpy(myMessage.message, incommingMessage->message);
 						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 					}
@@ -278,10 +278,10 @@ int main(void)
 					else
 					{
 						char message[512];
-						std::strcat(message, sa.username + (char)" has joined!");
+						std::strcat(message, input + (char)" has joined!");
 						UserMessage myMessage;
 						myMessage.messageId = ID_GAME_MESSAGE_1;
-						strncpy(myMessage.message, message, sizeof(message));
+						strcpy(myMessage.message, message);
 						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 						
 					}
