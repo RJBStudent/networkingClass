@@ -289,8 +289,15 @@ int main(void)
 
 						for (UserInfo* sa : clientsConnected)
 						{
-							if (sa->username == incommingMessage->recipient)
+							printf("*********%s:%s******\n", sa->username, incommingMessage->recipient);
+
+							std::string name1 = sa->username;
+							std::string name2 = incommingMessage->recipient;
+							bool matching = std::strcmp(name1.c_str(), name2.c_str());
+
+							if (!matching)
 							{
+								printf("MATCHING USERNAMES");
 								printf("\n %s: %s\n", incommingMessage->username, incommingMessage->message);
 								char message[512];
 								UserMessage myMessage;
