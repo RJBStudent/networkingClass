@@ -42,6 +42,8 @@ struct UserMessage
 	int messageId = 0;
 	char username[512];
 	char message[512];
+	char recipient[512];
+	bool isPrivate = false;
 };
 #pragma pack(pop)
 
@@ -119,6 +121,7 @@ int main(void)
 	char keyInput[512];
 	memset(keyInput, 0, 512);
 	int keyIndex = 0;
+	bool sendingPrivateMessage = false;
 
 	while (1)
 	{	
@@ -150,18 +153,48 @@ int main(void)
 			{
 				printf("\n");
 				UserMessage myMessage;
+				if (sendingPrivateMessage)
+				{
+					myMessage.isPrivate = true;
+					int place  = ((std::string)keyInput).find("POO");
+					std::string recip = ((std::string)keyInput).substr(0, place);
+					strcpy(myMessage.recipient, recip.c_str());
+
+					std::string mes = ((std::string)keyInput).substr(place+2, 512);
+					strcpy(myMessage.message, keyInput);
+				}
+				else
+				{
+					myMessage.isPrivate = false;
+					strcpy(myMessage.message, keyInput);
+				}
+				
 
 				myMessage.messageId = ID_GAME_MESSAGE_1;
 				strcpy(myMessage.username, userName);
-				strcpy(myMessage.message, keyInput);
 				peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, addressConnected, false);
 				keyIndex = 0;
 				memset(keyInput,0, 512);
 
 			}
 
+			if (GetAsyncKeyState(9) & 0x0001)
+			{
+				if (!sendingPrivateMessage)
+				{
+					sendingPrivateMessage = true;
+
+					printf("Sending Private Message (username:message)?\n");
+					memset(keyInput, 0, 512);
+				}
+				else if (sendingPrivateMessage)
+				{
+					sendingPrivateMessage = false;
+					memset(keyInput, 0, 512);
+				}
+			}
 		}
-		else if(isServer)
+		/*else if(isServer)
 		{
 			if (GetAsyncKeyState(13) & 0x0001 || GetAsyncKeyState(10) & 0x0001)
 			{
@@ -171,7 +204,7 @@ int main(void)
 					printf("\nUser : %s, IP : %s", sa->username, sa->userAddress.ToString());
 				}
 			}
-		}
+		}*/
 
 
 		for (packet = peer->Receive(); packet; peer->DeallocatePacket(packet), packet = peer->Receive())
@@ -245,19 +278,48 @@ int main(void)
 				
 				if (isServer)
 				{
-					for(UserInfo* sa : clientsConnected)
+					if (incommingMessage->isPrivate)
 					{
-						if (sa->userAddress == packet->systemAddress)
+						printf("super secret message!\n");
+						printf("%s", incommingMessage->recipient);
+
+						for (UserInfo* sa : clientsConnected)
 						{
-							printf("\n %s: %s\n", incommingMessage->username, incommingMessage->message);
-							continue;
+							if (sa->username == incommingMessage->recipient)
+							{
+								printf("\n %s: %s\n", incommingMessage->username, incommingMessage->message);
+								char message[512];
+								UserMessage myMessage;
+								myMessage.messageId = ID_GAME_MESSAGE_1;
+								strcpy(myMessage.username, incommingMessage->username);
+								strcpy(myMessage.message, incommingMessage->message);
+								peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa->userAddress, false);
+
+								break;
+							}
+							
 						}
-						char message[512];
-						UserMessage myMessage;
-						myMessage.messageId = ID_GAME_MESSAGE_1;
-						strcpy(myMessage.username, incommingMessage->username);
-						strcpy(myMessage.message, incommingMessage->message);
-						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa->userAddress, false);
+					}
+					else if (incommingMessage->isPrivate == false)
+					{
+						printf("not that secret message!\n");
+
+
+
+						for (UserInfo* sa : clientsConnected)
+						{
+							if (sa->userAddress == packet->systemAddress)
+							{
+								printf("\n %s: %s\n", incommingMessage->username, incommingMessage->message);
+								continue;
+							}
+							char message[512];
+							UserMessage myMessage;
+							myMessage.messageId = ID_GAME_MESSAGE_1;
+							strcpy(myMessage.username, incommingMessage->username);
+							strcpy(myMessage.message, incommingMessage->message);
+							peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa->userAddress, false);
+						}
 					}
 				}
 				else
