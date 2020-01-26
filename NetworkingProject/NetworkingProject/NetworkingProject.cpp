@@ -34,7 +34,7 @@ struct UserInfo
 	char username[512];
 };
 #pragma pack(pop)
-void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo> userList);
+void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo*> userList);
 
 #pragma pack(push, 1)
 struct UserMessage
@@ -113,7 +113,7 @@ int main(void)
 
 	bool connected = false;
 	RakNet::SystemAddress addressConnected;
-	std::vector<UserInfo> clientsConnected;
+	std::vector<UserInfo*> clientsConnected;
 	Package* myPackage = new Package();
 
 	char keyInput[512];
@@ -161,6 +161,17 @@ int main(void)
 			}
 
 		}
+		else if(isServer)
+		{
+			if (GetAsyncKeyState(13) & 0x0001 || GetAsyncKeyState(10) & 0x0001)
+			{
+				printf("Users Connected : ");
+				for (UserInfo* sa : clientsConnected)
+				{
+					printf("\nUser : %s, IP : %s", sa->username, sa->userAddress.ToString());
+				}
+			}
+		}
 
 
 		for (packet = peer->Receive(); packet; peer->DeallocatePacket(packet), packet = peer->Receive())
@@ -177,8 +188,8 @@ int main(void)
 			case ID_REMOTE_NEW_INCOMING_CONNECTION:
 			{
 				printf("Another client has connected.\n");
-				UserInfo newUser;
-				newUser.userAddress = packet->systemAddress;
+				UserInfo* newUser = new UserInfo();
+				newUser->userAddress = packet->systemAddress;
 				clientsConnected.push_back(newUser);
 			}
 				break;
@@ -197,8 +208,8 @@ int main(void)
 			case ID_NEW_INCOMING_CONNECTION:
 			{
 				printf("A connection is incoming.\n");
-				UserInfo newUser;
-				newUser.userAddress = packet->systemAddress;
+				UserInfo* newUser = new UserInfo();
+				newUser->userAddress = packet->systemAddress;
 				clientsConnected.push_back(newUser);
 			}
 				break;
@@ -234,9 +245,9 @@ int main(void)
 				
 				if (isServer)
 				{
-					for(UserInfo sa : clientsConnected)
+					for(UserInfo* sa : clientsConnected)
 					{
-						if (sa.userAddress == packet->systemAddress)
+						if (sa->userAddress == packet->systemAddress)
 						{
 							printf("\n %s: %s\n", incommingMessage->username, incommingMessage->message);
 							continue;
@@ -246,7 +257,7 @@ int main(void)
 						myMessage.messageId = ID_GAME_MESSAGE_1;
 						strcpy(myMessage.username, incommingMessage->username);
 						strcpy(myMessage.message, incommingMessage->message);
-						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
+						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa->userAddress, false);
 					}
 				}
 				else
@@ -261,19 +272,21 @@ int main(void)
 				RakNet::BitStream bsIn(packet->data, packet->length, false);
 				bsIn.IgnoreBytes(sizeof(RakNet::MessageID));
 				bsIn.Read(input);
+				UserInfo user;
 
-				for (UserInfo sa : clientsConnected)
+				for (UserInfo* sa : clientsConnected)
 				{
-					if (sa.userAddress == packet->systemAddress)
+					if (sa->userAddress == packet->systemAddress)
 					{
-						strcpy(sa.username, input);
+						
+						strcpy(sa->username, input);
 						printf("Sending Respone to user.. %s", input);
 						UserMessage myMessage;
 						memset(myMessage.message, 0, 512);
 						myMessage.messageId = ID_GAME_MESSAGE_1;
 						strcpy(myMessage.username, "Server");
 						strcpy(myMessage.message, "You have connected!");
-						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
+						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa->userAddress, false);
 					}
 					else
 					{
@@ -283,13 +296,11 @@ int main(void)
 						myMessage.messageId = ID_GAME_MESSAGE_1;
 						strcpy(myMessage.username, input);
 						strcpy(myMessage.message, message);
-						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
+						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa->userAddress, false);
 						
 					}
 				}
-
-			
-				//printf("Welcome %s!/n", input);
+							
 			}
 			break;
 			default:
@@ -302,17 +313,23 @@ int main(void)
 	}
 
 	RakNet::RakPeerInterface::DestroyInstance(peer);
+	for (UserInfo* user : clientsConnected)
+	{
+		delete user;
+	}
+	clientsConnected.clear();
 
 	return 0;
 }
 
 
-void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo> userList)
+void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<UserInfo*> userList)
 {
-	std::vector<UserInfo>::iterator it = userList.begin();
+	std::vector<UserInfo*>::iterator it = userList.begin();
 	while (it != userList.end())
 	{
-		if (it->userAddress == addressDisconnected)
+		
+		if ((*it)->userAddress == addressDisconnected)
 		{
 			userList.erase(it);
 			return;
