@@ -164,9 +164,9 @@ int main(void)
 					int place  = ((std::string)keyInput).find("POO");
 					std::string recip = ((std::string)keyInput).substr(0, place);
 					strcpy(myMessage.recipient, recip.c_str());
-
-					std::string mes = ((std::string)keyInput).substr(place+2, 512);
-					strcpy(myMessage.message, keyInput);
+					place += 3;
+					std::string mes = ((std::string)keyInput).substr(place, 512);
+					strcpy(myMessage.message, mes.c_str());
 				}
 				else
 				{
@@ -199,9 +199,9 @@ int main(void)
 				}
 			}
 		}
-		/*else if(isServer)
+		else if(isServer)
 		{
-			if (GetAsyncKeyState(13) & 0x0001 || GetAsyncKeyState(10) & 0x0001)
+			if (GetAsyncKeyState(VK_CONTROL) & 0x0001 )
 			{
 				printf("Users Connected : ");
 				for (UserInfo* sa : clientsConnected)
@@ -209,7 +209,7 @@ int main(void)
 					printf("\nUser : %s, IP : %s", sa->username, sa->userAddress.ToString());
 				}
 			}
-		}*/
+		}
 
 
 		for (packet = peer->Receive(); packet; peer->DeallocatePacket(packet), packet = peer->Receive())
@@ -285,11 +285,10 @@ int main(void)
 				{
 					if (incommingMessage->isPrivate)
 					{
-						printf("super secret message to %s!", incommingMessage->recipient);
+						printf("super secret message to %s from !", incommingMessage->recipient, incommingMessage->username);
 
 						for (UserInfo* sa : clientsConnected)
 						{
-							printf("*********%s:%s******\n", sa->username, incommingMessage->recipient);
 
 							std::string name1 = sa->username;
 							std::string name2 = incommingMessage->recipient;
@@ -297,7 +296,6 @@ int main(void)
 
 							if (!matching)
 							{
-								printf("MATCHING USERNAMES");
 								printf("\n %s: %s\n", incommingMessage->username, incommingMessage->message);
 								char message[512];
 								UserMessage myMessage;
@@ -313,8 +311,6 @@ int main(void)
 					}
 					else if (incommingMessage->isPrivate == false)
 					{
-						printf("not that secret message!\n");
-
 
 
 						for (UserInfo* sa : clientsConnected)
