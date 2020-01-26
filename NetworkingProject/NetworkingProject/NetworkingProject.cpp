@@ -278,9 +278,10 @@ int main(void)
 					else
 					{
 						char message[512];
-						std::strcat(message, input + (char)" has joined!");
+						strcpy(message, " has Joined");
 						UserMessage myMessage;
 						myMessage.messageId = ID_GAME_MESSAGE_1;
+						strcpy(myMessage.username, input);
 						strcpy(myMessage.message, message);
 						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 						
