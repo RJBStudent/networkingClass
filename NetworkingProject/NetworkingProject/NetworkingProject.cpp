@@ -75,7 +75,13 @@ int main(void)
 	if ((str[0] == 'c') || (str[0] == 'C'))
 	{
 		printf("Enter Username?\n");
-		fgets(userName, 512, stdin);		
+		fgets(userName, 512, stdin);	
+		std::string stringuser;
+		std::replace(stringuser.begin(), stringuser.end(), 10, 0);
+		std::replace(stringuser.begin(), stringuser.end(), 13, 0);
+		std::transform(stringuser.begin(), stringuser.end(), stringuser.begin(), ::toupper);
+		strcpy(userName, stringuser.c_str());
+		//userName = stringuser.erase(std::remove(stringuser, stringuser.end(), '\n'), stringuser.end());
 		RakNet::SocketDescriptor sd;
 		peer->Startup(1, &sd, 1);
 		isServer = false;
