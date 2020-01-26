@@ -82,8 +82,10 @@ int main(void)
 	else {
 		printf("Max number of Clients?\n");
 		fgets(str, 512, stdin);
-
-		maxClients = atoi(str);
+		if (str[0] == 13 || str[0] == 10)
+			maxClients = 12;
+		else
+			maxClients = atoi(str);
 
 		RakNet::SocketDescriptor sd(serverPort, 0);
 		peer->Startup(maxClients, &sd, 1);
@@ -154,7 +156,7 @@ int main(void)
 				strcpy(myMessage.message, keyInput);
 				peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, addressConnected, false);
 				keyIndex = 0;
-				memset(keyInput, 0, 512);
+				memset(keyInput,0, 512);
 
 			}
 
@@ -236,20 +238,20 @@ int main(void)
 					{
 						if (sa.userAddress == packet->systemAddress)
 						{
-							printf("\n%s: %s", sa.username, incommingMessage->message);
+							printf("\n %s: %s\n", incommingMessage->username, incommingMessage->message);
 							continue;
 						}
 						char message[512];
 						UserMessage myMessage;
 						myMessage.messageId = ID_GAME_MESSAGE_1;
-						strcat(myMessage.message, sa.username + (char)" ");
+						strcat(myMessage.username, sa.username);
 						strcpy(myMessage.message, incommingMessage->message);
 						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 					}
 				}
 				else
 				{
-					printf("\n %s: %s", incommingMessage->username, incommingMessage->message);
+					printf("\n %s: %s\n", incommingMessage->username, incommingMessage->message);
 				}
 			}
 			break;
@@ -264,12 +266,13 @@ int main(void)
 				{
 					if (sa.userAddress == packet->systemAddress)
 					{
-						strncpy(sa.username, input, sizeof(input));
+						strcpy(sa.username, input);
 						printf("Sending Respone to user.. %s", input);
-						std::string message = "You have connected";
 						UserMessage myMessage;
+						memset(myMessage.message, 0, 512);
 						myMessage.messageId = ID_GAME_MESSAGE_1;
-						strncpy(myMessage.message, message.c_str(), sizeof(message));
+						strcpy(myMessage.username, "Server");
+						strcpy(myMessage.message, "You have connected!");
 						peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, sa.userAddress, false);
 					}
 					else
