@@ -40,6 +40,7 @@ void UserDisconnected(RakNet::SystemAddress addressDisconnected, std::vector<Use
 struct UserMessage
 {
 	int messageId = 0;
+	char username[512];
 	char message[512];
 };
 #pragma pack(pop)
@@ -139,7 +140,7 @@ int main(void)
 			{
 				if (keyIndex-1 <= 0)
 				{
-					keyInput[keyIndex] = 32;
+					keyInput[keyIndex] = 0;
 					keyIndex--;
 				}
 			}
@@ -149,6 +150,7 @@ int main(void)
 				UserMessage myMessage;
 
 				myMessage.messageId = ID_GAME_MESSAGE_1;
+				strcpy(myMessage.username, userName);
 				strcpy(myMessage.message, keyInput);
 				peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, addressConnected, false);
 				keyIndex = 0;
@@ -247,7 +249,7 @@ int main(void)
 				}
 				else
 				{
-					printf("\n: %s", incommingMessage->message);
+					printf("\n %s: %s", incommingMessage->username, incommingMessage->message);
 				}
 			}
 			break;
