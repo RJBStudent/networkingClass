@@ -78,6 +78,29 @@ struct a3_DemoState
 	//Networking stuff
 	a3_Timer renderTimer[1];
 	RakNet::RakPeerInterface* peer;
+	
+	enum GameState 
+	{
+		NO_STATE = 0,
+		ENTER_PORT, 
+		ENTER_USERNAME,
+		START_SERVER_OR_CLIENT,
+		ENTER_SERVER_IP,
+		ENTER_MAX_CLIENTS,
+		PICK_GAME,
+		JOIN_GAME,
+		SELECT_PLAYERS,
+		CHALLENGER,
+		SPECTATOR,
+		CHAT,	
+		GAMESTATE_COUNT
+
+	};
+
+	char textInput[500];
+	int inputIndex;
+
+	GameState a3GameState;
 
 };
 
@@ -172,7 +195,7 @@ void a3demoTestRender(a3_DemoState const* demoState)
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	//draw some text
-	a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "Big dummy %f", (a3f32)demoState->renderTimer->totalTime);
+	a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "Big dummy %s", demoState->textInput);
 }
 
 
@@ -191,8 +214,42 @@ void a3demoTestNetworking_Send(a3_DemoState const* demoState)
 	//raknet business
 }
 
-void a3demoTestInput(a3_DemoState const* demoState)
+void a3demoTestInput(a3_DemoState const* demoState, char (&input)[500], int& index)
 {
+	for (int i = 32; i < 127; i++)
+	{
+		if (demoState->keyboard->key0.key[i])
+		{
+			if (demoState->inputIndex <= 500)
+			{
+
+				input[demoState->inputIndex] = i;
+				index++;
+			}
+		}
+	}
+
+	if (demoState->keyboard->key0.key[8])
+	{
+		if (demoState->inputIndex > 0)
+		{
+
+			input[demoState->inputIndex] = 0;
+			index--;
+		}
+		else if (demoState->inputIndex == 0)
+		{
+			input[demoState->inputIndex] = 0;
+		}
+	}
+
+	//Enter
+	if (demoState->keyboard->key0.key[10] || demoState->keyboard->key0.key[13])
+	{
+		memset(input, 0, 500);
+		index = 0;
+	}
+
 	//do Input
 }
 
@@ -300,7 +357,7 @@ A3DYLIBSYMBOL a3_DemoState *a3demoCB_load(a3_DemoState *demoState, a3boolean hot
 			demoState->peer = RakNet::RakPeerInterface::GetInstance();
 			if (demoState->peer)
 			{
-				//....
+
 			}
 		}
 		/*
@@ -394,7 +451,7 @@ A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState *demoState)
 			//a3demo_input(demoState, demoState->renderTimer->secondsPerTick);
 			//a3demo_render(demoState);
 
-			a3demoTestInput(demoState);//Test GameLogic
+			a3demoTestInput(demoState, demoState->textInput, demoState->inputIndex);//Test GameLogic
 			//Send
 			a3demoTestNetworking_Send(demoState);
 			a3demoTestUpdate(demoState);//Update Game Values
