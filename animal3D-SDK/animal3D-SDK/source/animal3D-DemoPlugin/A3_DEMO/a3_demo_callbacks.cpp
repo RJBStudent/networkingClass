@@ -367,13 +367,14 @@ void a3demoTestNetworking_Receive(a3_DemoState const* demoState)
 void a3demoTestNetworking_Send(a3_DemoState const* demoState)
 {
 	//raknet business
+
 }
 
 void a3demoTestInput(a3_DemoState* demoState, char(&input)[500], int& index)
 {
 	for (int i = 32; i < 127; i++)
 	{
-		if (demoState->keyboard->key0.key[i])
+		if (demoState->keyboard->key.key[i] && !demoState->keyboard->key0.key[i])
 		{
 			if (demoState->inputIndex <= 500)
 			{
@@ -384,7 +385,7 @@ void a3demoTestInput(a3_DemoState* demoState, char(&input)[500], int& index)
 		}
 	}
 
-	if (demoState->keyboard->key0.key[8])
+	if (demoState->keyboard->key.key[8]&& !demoState->keyboard->key0.key[8])
 	{
 		if (demoState->inputIndex > 0)
 		{
@@ -399,7 +400,7 @@ void a3demoTestInput(a3_DemoState* demoState, char(&input)[500], int& index)
 	}
 
 	//Enter
-	if (demoState->keyboard->key0.key[10] || demoState->keyboard->key0.key[13])
+	if ((demoState->keyboard->key.key[10] && !demoState->keyboard->key0.key[10]) || (demoState->keyboard->key.key[13] && !demoState->keyboard->key0.key[13]))
 	{
 
 
