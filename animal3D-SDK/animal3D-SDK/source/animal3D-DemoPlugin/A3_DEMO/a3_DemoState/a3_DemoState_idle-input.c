@@ -42,7 +42,8 @@ void a3demo_input_main(a3_DemoState *demoState, a3f64 dt)
 	a3real azimuth = 0.0f;
 	a3real elevation = 0.0f;
 	a3boolean rotatingCamera = 0, movingCamera = 0, changingParam = 0;
-	a3_DemoCamera *camera = demoState->camera + demoState->activeCamera;
+	a3_DemoProjector *activeCamera = demoState->projector + demoState->activeCamera;
+	a3_DemoSceneObject* activeCameraObject = activeCamera->sceneObject;
 
 
 	// using Xbox controller
@@ -53,7 +54,7 @@ void a3demo_input_main(a3_DemoState *demoState, a3f64 dt)
 		a3XboxControlGetJoysticks(demoState->xcontrol, lJoystick, rJoystick);
 		a3XboxControlGetTriggers(demoState->xcontrol, lTrigger, rTrigger);
 
-		movingCamera = a3demo_moveSceneObject(camera->sceneObject, (a3f32)dt * camera->ctrlMoveSpeed,
+		movingCamera = a3demo_moveSceneObject(activeCameraObject, (a3f32)dt * activeCamera->ctrlMoveSpeed,
 			(a3real)(rJoystick[0]),
 			(a3real)(*rTrigger - *lTrigger),
 			(a3real)(-rJoystick[1])
@@ -67,8 +68,8 @@ void a3demo_input_main(a3_DemoState *demoState, a3f64 dt)
 			// this really defines which way is "up"
 			// mouse's Y motion controls pitch, but X can control yaw or roll
 			// controlling yaw makes Y axis seem "up", roll makes Z seem "up"
-			rotatingCamera = a3demo_rotateSceneObject(camera->sceneObject,
-				ctrlRotateSpeed * (a3f32)dt * camera->ctrlRotateSpeed,
+			rotatingCamera = a3demo_rotateSceneObject(activeCameraObject,
+				ctrlRotateSpeed * (a3f32)dt * activeCamera->ctrlRotateSpeed,
 				// pitch: vertical tilt
 				elevation,
 				// yaw/roll depends on "vertical" axis: if y, yaw; if z, roll
@@ -81,7 +82,7 @@ void a3demo_input_main(a3_DemoState *demoState, a3f64 dt)
 	else
 	{
 		// move using WASDEQ
-		movingCamera = a3demo_moveSceneObject(camera->sceneObject, (a3f32)dt * camera->ctrlMoveSpeed,
+		movingCamera = a3demo_moveSceneObject(activeCameraObject, (a3f32)dt * activeCamera->ctrlMoveSpeed,
 			(a3real)a3keyboardGetDifference(demoState->keyboard, a3key_D, a3key_A),
 			(a3real)a3keyboardGetDifference(demoState->keyboard, a3key_E, a3key_Q),
 			(a3real)a3keyboardGetDifference(demoState->keyboard, a3key_S, a3key_W)
@@ -94,8 +95,8 @@ void a3demo_input_main(a3_DemoState *demoState, a3f64 dt)
 			// this really defines which way is "up"
 			// mouse's Y motion controls pitch, but X can control yaw or roll
 			// controlling yaw makes Y axis seem "up", roll makes Z seem "up"
-			rotatingCamera = a3demo_rotateSceneObject(camera->sceneObject,
-				ctrlRotateSpeed * (a3f32)dt * camera->ctrlRotateSpeed,
+			rotatingCamera = a3demo_rotateSceneObject(activeCameraObject,
+				ctrlRotateSpeed * (a3f32)dt * activeCamera->ctrlRotateSpeed,
 				// pitch: vertical tilt
 				elevation,
 				// yaw/roll depends on "vertical" axis: if y, yaw; if z, roll

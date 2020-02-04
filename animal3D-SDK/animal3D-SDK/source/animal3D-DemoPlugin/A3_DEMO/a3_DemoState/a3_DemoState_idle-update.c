@@ -106,9 +106,12 @@ void a3demo_update_main(a3_DemoState *demoState, a3f64 dt)
 	a3mat4 scaleMat = a3mat4_identity;
 
 	// active camera
-	a3_DemoCamera *camera = demoState->camera + demoState->activeCamera;
-	a3_DemoSceneObject *cameraObject = camera->sceneObject;
+	a3_DemoProjector *activeCamera = demoState->projector + demoState->activeCamera;
+	a3_DemoSceneObject *activeCameraObject = activeCamera->sceneObject;
 	a3_DemoSceneObject *currentSceneObject;
+
+	// light pointers
+	a3_DemoPointLight* pointLight;
 
 
 	// do simple animation
@@ -137,10 +140,12 @@ void a3demo_update_main(a3_DemoState *demoState, a3f64 dt)
 		a3demo_updateSceneObject(demoState->sceneObject + i, 0);
 	for (i = 0; i < demoStateMaxCount_cameraObject; ++i)
 		a3demo_updateSceneObject(demoState->cameraObject + i, 1);
+	for (i = 0; i < demoStateMaxCount_lightObject; ++i)
+		a3demo_updateSceneObject(demoState->lighObject + i, 1);
 
 	// update cameras/projectors
 	for (i = 0; i < demoStateMaxCount_projector; ++i)
-		a3demo_updateCameraViewProjection(demoState->camera + i);
+		a3demo_updateProjectorViewProjectionMat(demoState->projector + i);
 
 
 	// apply corrections if required
@@ -148,7 +153,7 @@ void a3demo_update_main(a3_DemoState *demoState, a3f64 dt)
 	demoState->gridTransform = useVerticalY ? convertZ2Y : a3mat4_identity;
 
 	// skybox position
-	demoState->skyboxObject->modelMat.v3 = camera->sceneObject->modelMat.v3;
+	demoState->skyboxObject->modelMat.v3 = activeCameraObject->modelMat.v3;
 
 
 	// grid lines highlight
@@ -159,6 +164,16 @@ void a3demo_update_main(a3_DemoState *demoState, a3f64 dt)
 		demoState->gridColor.g = 0.25f;
 	else
 		demoState->gridColor.b = 0.25f;
+
+
+	// update lights
+	for (i = 0, pointLight = demoState->forwardPointLight + i;
+		i < demoState->forwardLightCount;
+		++i, ++pointLight)
+	{
+		// convert to view space and retrieve view position
+		a3real4Real4x4Product(pointLight->viewPos.v, activeCameraObject->modelMatInv.m, pointLight->worldPos.v);
+	}
 
 
 	// correct rotations as needed
