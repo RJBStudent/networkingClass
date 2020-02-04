@@ -245,7 +245,7 @@ void a3demoTestRender(a3_DemoState const* demoState)
 	break;
 	case a3_DemoState::GameState::JOIN_GAME:
 	{
-		a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
+		a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "Join Game:  %s", demoState->textInput);
 	}
 	break;
 	case a3_DemoState::GameState::SELECT_PLAYERS:
@@ -436,7 +436,7 @@ void a3demoTestInput(a3_DemoState* demoState, char(&input)[500], int& index)
 			case a3_DemoState::GameState::ENTER_SERVER_IP:
 			{
 
-				if (input[0] == 10 || input[0] == 13)
+				if (input[0] == 0)
 				{
 					strcpy(input, "127.0.0.1");
 				}
@@ -452,10 +452,23 @@ void a3demoTestInput(a3_DemoState* demoState, char(&input)[500], int& index)
 
 				RakNet::SocketDescriptor sd(demoState->serverPort, 0);
 				demoState->peer->Startup(demoState->maxClients, &sd, 1);
-				demoState->isClient = false;
+				demoState->isClient = false; 
+				printf("Starting the server.\n");
 				demoState->peer->SetMaximumIncomingConnections(demoState->maxClients);
 				demoState->a3GameState = a3_DemoState::PICK_GAME;
 
+			}
+			break;
+			case a3_DemoState::GameState::PICK_GAME:
+			{
+				if (input[0] == 't' || input[0] == 'T')
+				{
+					
+				}
+				else
+				{
+
+				}
 			}
 			break;
 			default:
