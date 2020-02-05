@@ -39,6 +39,7 @@
 #include "RakNet/MessageIdentifiers.h"
 #include "RakNet/BitStream.h"
 #include "RakNet/RakNetTypes.h"  // MessageID
+#include "a3_Networking/a3_Networking_gs_tictactoe.c"
 
 enum GameMessages
 {
@@ -63,6 +64,7 @@ struct a3_NetworkState
 	unsigned int maxClients;
 	bool isClient;
 	char username[500];
+	bool tickTackToe;
 
 	enum GameState
 	{
@@ -82,11 +84,14 @@ struct a3_NetworkState
 
 	};
 
+	
+
 	char textInput[500];
 	int inputIndex;
 
 	GameState a3GameState;
 
+	
 };
 
 
@@ -243,7 +248,7 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	break;
 	case a3_NetworkState::GameState::PICK_GAME:
 	{
-		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "Pick Game:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "TicTacToe(T) or BattleShip(B):  %s", demoState->textInput);
 	}
 	break;
 	case a3_NetworkState::GameState::JOIN_GAME:
@@ -467,11 +472,12 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 			{
 				if (input[0] == 't' || input[0] == 'T')
 				{
-					
+					demoState->tickTackToe = true;
+					launchTicTacToe();
 				}
 				else
 				{
-
+					demoState->tickTackToe = false;
 				}
 			}
 			break;
