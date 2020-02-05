@@ -29,7 +29,7 @@
 
 
 #include "a3_dylib_config_export.h"
-//#include "a3_DemoState.h"
+#include "a3_DemoState.h"
 
 #include "animal3D/animal3D.h"
 #include "animal3D-A3DG/animal3D-A3DG.h"
@@ -47,43 +47,14 @@ enum GameMessages
 };
 
 
-struct a3_DemoState
+struct a3_NetworkState
 {
+
+	a3_DemoState demoState[1];
 	//---------------------------------------------------------------------
 	// general variables pertinent to the state
 
-	// terminate key pressed
-	a3i32 exitFlag;
-
-	// global vertical axis: Z = 0, Y = 1
-	a3i32 verticalAxis;
-
-	// asset streaming between loads enabled (careful!)
-	a3i32 streaming;
-
-	// window and full-frame dimensions
-	a3ui32 windowWidth, windowHeight;
-	a3real windowWidthInv, windowHeightInv, windowAspect;
-	a3ui32 frameWidth, frameHeight;
-	a3real frameWidthInv, frameHeightInv, frameAspect;
-	a3i32 frameBorder;
-
-
-	//---------------------------------------------------------------------
-	// objects that have known or fixed instance count in the whole demo
-
-	// text renderer
-	a3i32 textInit, textMode, textModeCount;
-	a3_TextRenderer text[1];
-
-	// input
-	a3_MouseInput mouse[1];
-	a3_KeyboardInput keyboard[1];
-	a3_XboxControllerInput xcontrol[4];
-
-	// pointer to fast trig table
-	a3f32 trigTable[4096 * 4];
-
+	
 
 	//Networking stuff
 	a3_Timer renderTimer[1];
@@ -132,7 +103,7 @@ struct a3_DemoState
 //	when the library is reloaded... that would mess everything up!)
 inline a3ui32 a3demo_getPersistentStateSize()
 {
-	const a3ui32 minimum = sizeof(a3_DemoState);
+	const a3ui32 minimum = sizeof(a3_NetworkState);
 	a3ui32 size = 1;
 	while (size < minimum)
 		size += size;
@@ -150,7 +121,7 @@ inline void a3demo_initializeText(a3_TextRenderer* text)
 //-----------------------------------------------------------------------------
 // callback sub-routines
 
-inline void a3demoCB_keyCharPress_main(a3_DemoState* demoState, a3i32 asciiKey,
+inline void a3demoCB_keyCharPress_main(a3_NetworkState* demoState, a3i32 asciiKey,
 	const a3ui32 demoSubMode, const a3ui32 demoOutput,
 	const a3ui32 demoSubModeCount, const a3ui32 demoOutputCount)
 {
@@ -189,7 +160,7 @@ inline void a3demoCB_keyCharPress_main(a3_DemoState* demoState, a3i32 asciiKey,
 	*/
 }
 
-inline void a3demoCB_keyCharHold_main(a3_DemoState* demoState, a3i32 asciiKey)
+inline void a3demoCB_keyCharHold_main(a3_NetworkState* demoState, a3i32 asciiKey)
 {
 	// handle special cases immediately
 	switch (asciiKey)
@@ -203,69 +174,101 @@ inline void a3demoCB_keyCharHold_main(a3_DemoState* demoState, a3i32 asciiKey)
 
 #include "GL/glew.h"
 
-void a3demoTestRender(a3_DemoState const* demoState)
+void a3demoTestRender(a3_NetworkState const* demoState)
 {
 	//Clear color
 	glClear(GL_COLOR_BUFFER_BIT);
+
+	a3framebufferDeactivateSetViewport(a3fbo_depthDisable, 0, 0, demoState->demoState->windowWidth, demoState->demoState->windowHeight);
+
+	const a3_DemoStateShaderProgram* currentDemoProgram = demoState->demoState->prog_drawTexture;
+	a3shaderProgramActivate(currentDemoProgram->program);
+	a3mat4 projMat;
+	a3mat4 modelViewMat;
+	a3mat4 spriteMat;
+
+	a3vec4 spritePos;
+	spritePos.x = .5;
+	spritePos.y= .5;
+	spritePos.z = 1;
+
+	
+	a3real4x4MakeOrthographicProjectionPlanes(projMat.m, 0, 1, 0, 1, 0, 0, 1);
+
+	a3shaderUniformSendFloatMat(a3unif_mat4, 0, currentDemoProgram->uP, 1, projMat.mm);
+	a3real4x4SetNonUnif(spriteMat.m, 100, 100, 1);
+	a3real4x4Product(modelViewMat.m, projMat.m, spriteMat.m);
+	//a3real4x4ConcatL(modelViewMat.m, projMat.m);
+	//a3real4x4ConcatL(modelViewMat.m, spriteMat.m);
+
+	modelViewMat.v3 = spritePos;
+
+	a3shaderUniformSendFloatMat(a3unif_mat4, 0, currentDemoProgram->uMVP, 1, modelViewMat.mm);
+	a3textureActivate(demoState->demoState->tex_skybox_clouds, a3tex_unit00);
+
+	
+	glCullFace(GL_FRONT);
+	a3vertexDrawableActivateAndRender(demoState->demoState->draw_unitquad);
+	glCullFace(GL_BACK);
 
 	//draw some text
 
 	switch (demoState->a3GameState)
 	{
-	case a3_DemoState::GameState::ENTER_PORT:
+	case a3_NetworkState::GameState::ENTER_PORT:
 	{
-		a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "Enter Server Port:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "Enter Server Port:  %s", demoState->textInput);
 	}
 	break;
-	case a3_DemoState::GameState::ENTER_USERNAME:
+	case a3_NetworkState::GameState::ENTER_USERNAME:
 	{
 
-		a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "Enter Username:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "Enter Username:  %s", demoState->textInput);
 	}
 	break;
-	case a3_DemoState::GameState::START_SERVER_OR_CLIENT:
+	case a3_NetworkState::GameState::START_SERVER_OR_CLIENT:
 	{
-		a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "Enter (S) for Server or (c) for client:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "Enter (S) for Server or (c) for client:  %s", demoState->textInput);
 	}
 	break;
-	case a3_DemoState::GameState::ENTER_SERVER_IP:
+	case a3_NetworkState::GameState::ENTER_SERVER_IP:
 	{
-		a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "Enter Server IP:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "Enter Server IP:  %s", demoState->textInput);
 	}
 	break;
-	case a3_DemoState::GameState::ENTER_MAX_CLIENTS:
+	case a3_NetworkState::GameState::ENTER_MAX_CLIENTS:
 	{
-		a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
 	}
 	break;
-	case a3_DemoState::GameState::PICK_GAME:
+	case a3_NetworkState::GameState::PICK_GAME:
 	{
-		a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "Pick Game:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "Pick Game:  %s", demoState->textInput);
 	}
 	break;
-	case a3_DemoState::GameState::JOIN_GAME:
+	case a3_NetworkState::GameState::JOIN_GAME:
 	{
-		a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "Join Game:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "Join Game:  %s", demoState->textInput);
 	}
 	break;
-	case a3_DemoState::GameState::SELECT_PLAYERS:
+	case a3_NetworkState::GameState::SELECT_PLAYERS:
 	{
-		a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "Select Players:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "Select Players:  %s", demoState->textInput);
 	}
 	break;
-	case a3_DemoState::GameState::CHALLENGER:
+	case a3_NetworkState::GameState::CHALLENGER:
 	{
 		//Render Challenger OPtions
 		//a3textDraw(demoState->text, -1, -1, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
 	}
 	break;
-	case a3_DemoState::GameState::SPECTATOR:
+	case a3_NetworkState::GameState::SPECTATOR:
 	{
 		//Render Spectator Options
 		//a3textDraw(demoState->text, -1, -1, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
 	}
 	break;
-	case a3_DemoState::GameState::CHAT:
+	case a3_NetworkState::GameState::CHAT:
 	{
 		//Render Chat
 		//a3textDraw(demoState->text, -1, -1, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
@@ -278,7 +281,7 @@ void a3demoTestRender(a3_DemoState const* demoState)
 }
 
 
-void a3demoTestNetworking_Receive(a3_DemoState const* demoState)
+void a3demoTestNetworking_Receive(a3_NetworkState const* demoState)
 {
 	//raknet business
 	RakNet::Packet* packet;
@@ -364,17 +367,17 @@ void a3demoTestNetworking_Receive(a3_DemoState const* demoState)
 
 }
 
-void a3demoTestNetworking_Send(a3_DemoState const* demoState)
+void a3demoTestNetworking_Send(a3_NetworkState const* demoState)
 {
 	//raknet business
 
 }
 
-void a3demoTestInput(a3_DemoState* demoState, char(&input)[500], int& index)
+void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 {
 	for (int i = 32; i < 127; i++)
 	{
-		if (demoState->keyboard->key.key[i] && !demoState->keyboard->key0.key[i])
+		if (demoState->demoState->keyboard->key.key[i] && !demoState->demoState->keyboard->key0.key[i])
 		{
 			if (demoState->inputIndex <= 500)
 			{
@@ -385,7 +388,7 @@ void a3demoTestInput(a3_DemoState* demoState, char(&input)[500], int& index)
 		}
 	}
 
-	if (demoState->keyboard->key.key[8]&& !demoState->keyboard->key0.key[8])
+	if (demoState->demoState->keyboard->key.key[8]&& !demoState->demoState->keyboard->key0.key[8])
 	{
 		if (demoState->inputIndex > 0)
 		{
@@ -400,40 +403,41 @@ void a3demoTestInput(a3_DemoState* demoState, char(&input)[500], int& index)
 	}
 
 	//Enter
-	if ((demoState->keyboard->key.key[10] && !demoState->keyboard->key0.key[10]) || (demoState->keyboard->key.key[13] && !demoState->keyboard->key0.key[13]))
+	if ((demoState->demoState->keyboard->key.key[10] && !demoState->demoState->keyboard->key0.key[10]) ||
+		(demoState->demoState->keyboard->key.key[13] && !demoState->demoState->keyboard->key0.key[13]))
 	{
 
 
 		switch (demoState->a3GameState)
 		{
-			case a3_DemoState::GameState::ENTER_PORT:
+			case a3_NetworkState::GameState::ENTER_PORT:
 			{
 				demoState->serverPort = atoi(input);
-				demoState->a3GameState = a3_DemoState::START_SERVER_OR_CLIENT;
+				demoState->a3GameState = a3_NetworkState::START_SERVER_OR_CLIENT;
 			}
 			break;
-			case a3_DemoState::GameState::ENTER_USERNAME:
+			case a3_NetworkState::GameState::ENTER_USERNAME:
 			{
 				strcpy(demoState->username, input);
-				demoState->a3GameState = a3_DemoState::START_SERVER_OR_CLIENT;
+				demoState->a3GameState = a3_NetworkState::START_SERVER_OR_CLIENT;
 			}
 			break;
-			case a3_DemoState::GameState::START_SERVER_OR_CLIENT:
+			case a3_NetworkState::GameState::START_SERVER_OR_CLIENT:
 			{
 				if (input[0] == 'c' || input[0] == 'C')
 				{
 					RakNet::SocketDescriptor sd;
 					demoState->peer->Startup(1, &sd, 1);
 					demoState->isClient = true;
-					demoState->a3GameState = a3_DemoState::ENTER_SERVER_IP;
+					demoState->a3GameState = a3_NetworkState::ENTER_SERVER_IP;
 				}
 				else
 				{
-					demoState->a3GameState = a3_DemoState::ENTER_MAX_CLIENTS;
+					demoState->a3GameState = a3_NetworkState::ENTER_MAX_CLIENTS;
 				}
 			}
 			break;
-			case a3_DemoState::GameState::ENTER_SERVER_IP:
+			case a3_NetworkState::GameState::ENTER_SERVER_IP:
 			{
 
 				if (input[0] == 0)
@@ -441,10 +445,10 @@ void a3demoTestInput(a3_DemoState* demoState, char(&input)[500], int& index)
 					strcpy(input, "127.0.0.1");
 				}
 				demoState->peer->Connect(input, demoState->serverPort, 0, 0);
-				demoState->a3GameState = a3_DemoState::JOIN_GAME;
+				demoState->a3GameState = a3_NetworkState::JOIN_GAME;
 			}
 			break;
-			case a3_DemoState::GameState::ENTER_MAX_CLIENTS:
+			case a3_NetworkState::GameState::ENTER_MAX_CLIENTS:
 			{
 				demoState->maxClients = atoi(input);
 				if (demoState->maxClients < 3)
@@ -455,11 +459,11 @@ void a3demoTestInput(a3_DemoState* demoState, char(&input)[500], int& index)
 				demoState->isClient = false; 
 				printf("Starting the server.\n");
 				demoState->peer->SetMaximumIncomingConnections(demoState->maxClients);
-				demoState->a3GameState = a3_DemoState::PICK_GAME;
+				demoState->a3GameState = a3_NetworkState::PICK_GAME;
 
 			}
 			break;
-			case a3_DemoState::GameState::PICK_GAME:
+			case a3_NetworkState::GameState::PICK_GAME:
 			{
 				if (input[0] == 't' || input[0] == 'T')
 				{
@@ -481,7 +485,7 @@ void a3demoTestInput(a3_DemoState* demoState, char(&input)[500], int& index)
 	//do Input
 }
 
-void a3demoTestUpdate(a3_DemoState const* demoState)
+void a3demoTestUpdate(a3_NetworkState const* demoState)
 {
 	//Update
 }
@@ -502,25 +506,25 @@ extern "C"
 {
 #endif	// __cplusplus
 
-	A3DYLIBSYMBOL a3_DemoState* a3demoCB_load(a3_DemoState* demoState, a3boolean hotbuild);
-	A3DYLIBSYMBOL a3_DemoState* a3demoCB_unload(a3_DemoState* demoState, a3boolean hotbuild);
-	A3DYLIBSYMBOL a3i32 a3demoCB_display(a3_DemoState* demoState);
-	A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState* demoState);
-	A3DYLIBSYMBOL void a3demoCB_windowActivate(a3_DemoState* demoState);
-	A3DYLIBSYMBOL void a3demoCB_windowDeactivate(a3_DemoState* demoState);
-	A3DYLIBSYMBOL void a3demoCB_windowMove(a3_DemoState* demoState, a3i32 newWindowPosX, a3i32 newWindowPosY);
-	A3DYLIBSYMBOL void a3demoCB_windowResize(a3_DemoState* demoState, a3i32 newWindowWidth, a3i32 newWindowHeight);
-	A3DYLIBSYMBOL void a3demoCB_keyPress(a3_DemoState* demoState, a3i32 virtualKey);
-	A3DYLIBSYMBOL void a3demoCB_keyHold(a3_DemoState* demoState, a3i32 virtualKey);
-	A3DYLIBSYMBOL void a3demoCB_keyRelease(a3_DemoState* demoState, a3i32 virtualKey);
-	A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState* demoState, a3i32 asciiKey);
-	A3DYLIBSYMBOL void a3demoCB_keyCharHold(a3_DemoState* demoState, a3i32 asciiKey);
-	A3DYLIBSYMBOL void a3demoCB_mouseClick(a3_DemoState* demoState, a3i32 button, a3i32 cursorX, a3i32 cursorY);
-	A3DYLIBSYMBOL void a3demoCB_mouseDoubleClick(a3_DemoState* demoState, a3i32 button, a3i32 cursorX, a3i32 cursorY);
-	A3DYLIBSYMBOL void a3demoCB_mouseRelease(a3_DemoState* demoState, a3i32 button, a3i32 cursorX, a3i32 cursorY);
-	A3DYLIBSYMBOL void a3demoCB_mouseWheel(a3_DemoState* demoState, a3i32 delta, a3i32 cursorX, a3i32 cursorY);
-	A3DYLIBSYMBOL void a3demoCB_mouseMove(a3_DemoState* demoState, a3i32 cursorX, a3i32 cursorY);
-	A3DYLIBSYMBOL void a3demoCB_mouseLeave(a3_DemoState* demoState);
+	A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boolean hotbuild);
+	A3DYLIBSYMBOL a3_NetworkState* a3demoCB_unload(a3_NetworkState* demoState, a3boolean hotbuild);
+	A3DYLIBSYMBOL a3i32 a3demoCB_display(a3_NetworkState* demoState);
+	A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_NetworkState* demoState);
+	A3DYLIBSYMBOL void a3demoCB_windowActivate(a3_NetworkState* demoState);
+	A3DYLIBSYMBOL void a3demoCB_windowDeactivate(a3_NetworkState* demoState);
+	A3DYLIBSYMBOL void a3demoCB_windowMove(a3_NetworkState* demoState, a3i32 newWindowPosX, a3i32 newWindowPosY);
+	A3DYLIBSYMBOL void a3demoCB_windowResize(a3_NetworkState* demoState, a3i32 newWindowWidth, a3i32 newWindowHeight);
+	A3DYLIBSYMBOL void a3demoCB_keyPress(a3_NetworkState* demoState, a3i32 virtualKey);
+	A3DYLIBSYMBOL void a3demoCB_keyHold(a3_NetworkState* demoState, a3i32 virtualKey);
+	A3DYLIBSYMBOL void a3demoCB_keyRelease(a3_NetworkState* demoState, a3i32 virtualKey);
+	A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_NetworkState* demoState, a3i32 asciiKey);
+	A3DYLIBSYMBOL void a3demoCB_keyCharHold(a3_NetworkState* demoState, a3i32 asciiKey);
+	A3DYLIBSYMBOL void a3demoCB_mouseClick(a3_NetworkState* demoState, a3i32 button, a3i32 cursorX, a3i32 cursorY);
+	A3DYLIBSYMBOL void a3demoCB_mouseDoubleClick(a3_NetworkState* demoState, a3i32 button, a3i32 cursorX, a3i32 cursorY);
+	A3DYLIBSYMBOL void a3demoCB_mouseRelease(a3_NetworkState* demoState, a3i32 button, a3i32 cursorX, a3i32 cursorY);
+	A3DYLIBSYMBOL void a3demoCB_mouseWheel(a3_NetworkState* demoState, a3i32 delta, a3i32 cursorX, a3i32 cursorY);
+	A3DYLIBSYMBOL void a3demoCB_mouseMove(a3_NetworkState* demoState, a3i32 cursorX, a3i32 cursorY);
+	A3DYLIBSYMBOL void a3demoCB_mouseLeave(a3_NetworkState* demoState);
 
 #ifdef __cplusplus
 }
@@ -531,7 +535,7 @@ extern "C"
 // callback implementations
 
 // demo is loaded
-A3DYLIBSYMBOL a3_DemoState* a3demoCB_load(a3_DemoState* demoState, a3boolean hotbuild)
+A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boolean hotbuild)
 {
 	const a3ui32 stateSize = a3demo_getPersistentStateSize();
 	const a3ui32 trigSamplesPerDegree = 4;
@@ -542,14 +546,14 @@ A3DYLIBSYMBOL a3_DemoState* a3demoCB_load(a3_DemoState* demoState, a3boolean hot
 
 
 		const a3ui32 stateSize = a3demo_getPersistentStateSize();
-		a3_DemoState copy = *demoState;
+		a3_NetworkState copy = *demoState;
 
 		// example 1: copy memory directly
 		free(demoState);
-		demoState = (a3_DemoState*)malloc(stateSize);
+		demoState = (a3_NetworkState*)malloc(stateSize);
 		memset(demoState, 0, stateSize);
 		*demoState = copy;
-		a3trigInitSetTables(trigSamplesPerDegree, demoState->trigTable);
+		a3trigInitSetTables(trigSamplesPerDegree, demoState->demoState->trigTable);
 		/*
 				// call refresh to re-link pointers in case demo state address changed
 				a3demo_refresh(demoState);
@@ -563,21 +567,21 @@ A3DYLIBSYMBOL a3_DemoState* a3demoCB_load(a3_DemoState* demoState, a3boolean hot
 		// HEAP allocate persistent state
 		// stack object will be deleted at the end of the function
 		// good idea to set the whole block of memory to zero
-		demoState = (a3_DemoState*)malloc(stateSize);
+		demoState = (a3_NetworkState*)malloc(stateSize);
 		memset(demoState, 0, stateSize);
 
 		// set up trig table (A3DM)
-		a3trigInit(trigSamplesPerDegree, demoState->trigTable);
+		a3trigInit(trigSamplesPerDegree, demoState->demoState->trigTable);
 
 		// initialize state variables
 		// e.g. timer, thread, etc.
 		a3timerSet(demoState->renderTimer, 30.0);
 		a3timerStart(demoState->renderTimer);
 		// text
-		a3demo_initializeText(demoState->text);
-		demoState->textInit = 1;
-		demoState->textMode = 1;
-		demoState->textModeCount = 3;	// 0=off, 1=controls, 2=data
+		a3demo_initializeText(demoState->demoState->text);
+		demoState->demoState->textInit = 1;
+		demoState->demoState->textMode = 1;
+		demoState->demoState->textModeCount = 3;	// 0=off, 1=controls, 2=data
 		a3fileStreamMakeDirectory("./data");
 
 		if (!demoState->peer)
@@ -588,7 +592,7 @@ A3DYLIBSYMBOL a3_DemoState* a3demoCB_load(a3_DemoState* demoState, a3boolean hot
 			}
 		}
 
-		demoState->a3GameState = a3_DemoState::ENTER_PORT;
+		demoState->a3GameState = a3_NetworkState::ENTER_PORT;
 
 		/*
 
@@ -620,7 +624,7 @@ A3DYLIBSYMBOL a3_DemoState* a3demoCB_load(a3_DemoState* demoState, a3boolean hot
 }
 
 // demo is unloaded; option to unload to prep for hotbuild
-A3DYLIBSYMBOL a3_DemoState* a3demoCB_unload(a3_DemoState* demoState, a3boolean hotbuild)
+A3DYLIBSYMBOL a3_NetworkState* a3demoCB_unload(a3_NetworkState* demoState, a3boolean hotbuild)
 {
 	// release things that need releasing always, whether hotbuilding or not
 	// e.g. kill thread
@@ -642,7 +646,7 @@ A3DYLIBSYMBOL a3_DemoState* a3demoCB_unload(a3_DemoState* demoState, a3boolean h
 		// validate unload
 		a3demo_validateUnload(demoState);
 		*/
-		a3textRelease(demoState->text);
+		a3textRelease(demoState->demoState->text);
 		// erase other stuff
 		a3trigFree();
 		if (demoState->peer)
@@ -661,7 +665,7 @@ A3DYLIBSYMBOL a3_DemoState* a3demoCB_unload(a3_DemoState* demoState, a3boolean h
 
 // window updates display
 // **NOTE: DO NOT USE FOR RENDERING**
-A3DYLIBSYMBOL a3i32 a3demoCB_display(a3_DemoState* demoState)
+A3DYLIBSYMBOL a3i32 a3demoCB_display(a3_NetworkState* demoState)
 {
 	// do nothing, should just return 1 to indicate that the 
 	//	window's display area is controlled by the demo
@@ -669,10 +673,10 @@ A3DYLIBSYMBOL a3i32 a3demoCB_display(a3_DemoState* demoState)
 }
 
 // window idles
-A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState* demoState)
+A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_NetworkState* demoState)
 {
 	// perform any idle tasks, such as rendering
-	if (!demoState->exitFlag)
+	if (!demoState->demoState->exitFlag)
 	{
 		if (a3timerUpdate(demoState->renderTimer) > 0)
 		{
@@ -691,9 +695,9 @@ A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState* demoState)
 
 
 			// update input
-			a3mouseUpdate(demoState->mouse);
-			a3keyboardUpdate(demoState->keyboard);
-			a3XboxControlUpdate(demoState->xcontrol);
+			a3mouseUpdate(demoState->demoState->mouse);
+			a3keyboardUpdate(demoState->demoState->keyboard);
+			a3XboxControlUpdate(demoState->demoState->xcontrol);
 
 
 			// render occurred this idle: return +1
@@ -710,34 +714,34 @@ A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState* demoState)
 }
 
 // window gains focus
-A3DYLIBSYMBOL void a3demoCB_windowActivate(a3_DemoState* demoState)
+A3DYLIBSYMBOL void a3demoCB_windowActivate(a3_NetworkState* demoState)
 {
 	// nothing really needs to be done here...
 	//	but it's here just in case
 }
 
 // window loses focus
-A3DYLIBSYMBOL void a3demoCB_windowDeactivate(a3_DemoState* demoState)
+A3DYLIBSYMBOL void a3demoCB_windowDeactivate(a3_NetworkState* demoState)
 {
 	// reset input; it won't track events if the window is inactive, 
 	//	active controls will freeze and you'll get strange behaviors
-	a3keyboardReset(demoState->keyboard);
-	a3mouseReset(demoState->mouse);
-	a3XboxControlReset(demoState->xcontrol);
-	a3XboxControlSetRumble(demoState->xcontrol, 0, 0);
+	a3keyboardReset(demoState->demoState->keyboard);
+	a3mouseReset(demoState->demoState->mouse);
+	a3XboxControlReset(demoState->demoState->xcontrol);
+	a3XboxControlSetRumble(demoState->demoState->xcontrol, 0, 0);
 }
 
 // window moves
-A3DYLIBSYMBOL void a3demoCB_windowMove(a3_DemoState* demoState, a3i32 newWindowPosX, a3i32 newWindowPosY)
+A3DYLIBSYMBOL void a3demoCB_windowMove(a3_NetworkState* demoState, a3i32 newWindowPosX, a3i32 newWindowPosY)
 {
 	// nothing needed here
 }
 
 // window resizes
-A3DYLIBSYMBOL void a3demoCB_windowResize(a3_DemoState* demoState, a3i32 newWindowWidth, a3i32 newWindowHeight)
+A3DYLIBSYMBOL void a3demoCB_windowResize(a3_NetworkState* demoState, a3i32 newWindowWidth, a3i32 newWindowHeight)
 {
-	//a3ui32 i;
-	//a3_DemoCamera *camera;
+	a3ui32 i;
+	a3_DemoProjector *camera;
 
 	// account for borders here
 	const a3i32 frameBorder = 0;
@@ -747,19 +751,19 @@ A3DYLIBSYMBOL void a3demoCB_windowResize(a3_DemoState* demoState, a3i32 newWindo
 	const a3real frameAspect = (a3real)frameWidth / (a3real)frameHeight;
 
 	// copy new values to demo state
-	demoState->windowWidth = newWindowWidth;
-	demoState->windowHeight = newWindowHeight;
-	demoState->windowWidthInv = a3recip((a3real)newWindowWidth);
-	demoState->windowHeightInv = a3recip((a3real)newWindowHeight);
-	demoState->windowAspect = windowAspect;
-	demoState->frameWidth = frameWidth;
-	demoState->frameHeight = frameHeight;
-	demoState->frameWidthInv = a3recip((a3real)frameWidth);
-	demoState->frameHeightInv = a3recip((a3real)frameHeight);
-	demoState->frameAspect = frameAspect;
-	demoState->frameBorder = frameBorder;
-	a3framebufferDeactivateSetViewport(a3fbo_depthDisable, -frameBorder, -frameBorder, demoState->frameWidth, demoState->frameHeight);
-	/*
+	demoState->demoState->windowWidth = newWindowWidth;
+	demoState->demoState->windowHeight = newWindowHeight;
+	demoState->demoState->windowWidthInv = a3recip((a3real)newWindowWidth);
+	demoState->demoState->windowHeightInv = a3recip((a3real)newWindowHeight);
+	demoState->demoState->windowAspect = windowAspect;
+	demoState->demoState->frameWidth = frameWidth;
+	demoState->demoState->frameHeight = frameHeight;
+	demoState->demoState->frameWidthInv = a3recip((a3real)frameWidth);
+	demoState->demoState->frameHeightInv = a3recip((a3real)frameHeight);
+	demoState->demoState->frameAspect = frameAspect;
+	demoState->demoState->frameBorder = frameBorder;
+	a3framebufferDeactivateSetViewport(a3fbo_depthDisable, -frameBorder, -frameBorder, demoState->demoState->frameWidth, demoState->demoState->frameHeight);
+	
 	// framebuffers should be initialized or re-initialized here
 	//	since they are likely dependent on the window size
 
@@ -768,39 +772,39 @@ A3DYLIBSYMBOL void a3demoCB_windowResize(a3_DemoState* demoState, a3i32 newWindo
 
 	// viewing info for projection matrix
 	// initialize cameras dependent on viewport
-	for (i = 0, camera = demoState->camera + i; i < demoStateMaxCount_cameraObject; ++i, ++camera)
+	for (i = 0, camera = demoState->demoState->projector + i; i < demoStateMaxCount_cameraObject; ++i, ++camera)
 	{
 		camera->aspect = frameAspect;
-		a3demo_updateCameraProjection(camera);
-	}*/
+		a3demo_updateProjectorProjectionMat(camera);
+	}
 }
 
 // any key is pressed
-A3DYLIBSYMBOL void a3demoCB_keyPress(a3_DemoState* demoState, a3i32 virtualKey)
+A3DYLIBSYMBOL void a3demoCB_keyPress(a3_NetworkState* demoState, a3i32 virtualKey)
 {
 	// persistent state update
-	a3keyboardSetState(demoState->keyboard, (a3_KeyboardKey)virtualKey, a3input_down);
+	a3keyboardSetState(demoState->demoState->keyboard, (a3_KeyboardKey)virtualKey, a3input_down);
 }
 
 // any key is held
-A3DYLIBSYMBOL void a3demoCB_keyHold(a3_DemoState* demoState, a3i32 virtualKey)
+A3DYLIBSYMBOL void a3demoCB_keyHold(a3_NetworkState* demoState, a3i32 virtualKey)
 {
 	// persistent state update
-	a3keyboardSetState(demoState->keyboard, (a3_KeyboardKey)virtualKey, a3input_down);
+	a3keyboardSetState(demoState->demoState->keyboard, (a3_KeyboardKey)virtualKey, a3input_down);
 }
 
 // any key is released
-A3DYLIBSYMBOL void a3demoCB_keyRelease(a3_DemoState* demoState, a3i32 virtualKey)
+A3DYLIBSYMBOL void a3demoCB_keyRelease(a3_NetworkState* demoState, a3i32 virtualKey)
 {
 	// persistent state update
-	a3keyboardSetState(demoState->keyboard, (a3_KeyboardKey)virtualKey, a3input_up);
+	a3keyboardSetState(demoState->demoState->keyboard, (a3_KeyboardKey)virtualKey, a3input_up);
 }
 
 // ASCII key is pressed (immediately preceded by "any key" pressed call above)
 // NOTE: there is no release counterpart
-A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState* demoState, a3i32 asciiKey)
+A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_NetworkState* demoState, a3i32 asciiKey)
 {
-	a3keyboardSetStateASCII(demoState->keyboard, (a3byte)asciiKey);
+	a3keyboardSetStateASCII(demoState->demoState->keyboard, (a3byte)asciiKey);
 	/*a3ui32 demoSubMode = demoState->demoSubMode[demoState->demoMode];
 	const a3ui32 demoSubModeCount = demoState->demoSubModeCount[demoState->demoMode];
 	const a3ui32 demoOutput = demoState->demoOutputMode[demoState->demoMode][demoSubMode];
@@ -906,9 +910,9 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState* demoState, a3i32 asciiKey
 }
 
 // ASCII key is held
-A3DYLIBSYMBOL void a3demoCB_keyCharHold(a3_DemoState* demoState, a3i32 asciiKey)
+A3DYLIBSYMBOL void a3demoCB_keyCharHold(a3_NetworkState* demoState, a3i32 asciiKey)
 {
-	a3keyboardSetStateASCII(demoState->keyboard, (a3byte)asciiKey);
+	a3keyboardSetStateASCII(demoState->demoState->keyboard, (a3byte)asciiKey);
 	/*// persistent state update
 
 
@@ -924,35 +928,35 @@ A3DYLIBSYMBOL void a3demoCB_keyCharHold(a3_DemoState* demoState, a3i32 asciiKey)
 }
 
 // mouse button is clicked
-A3DYLIBSYMBOL void a3demoCB_mouseClick(a3_DemoState* demoState, a3i32 button, a3i32 cursorX, a3i32 cursorY)
+A3DYLIBSYMBOL void a3demoCB_mouseClick(a3_NetworkState* demoState, a3i32 button, a3i32 cursorX, a3i32 cursorY)
 {
 	// persistent state update
-	a3mouseSetState(demoState->mouse, (a3_MouseButton)button, a3input_down);
-	a3mouseSetPosition(demoState->mouse, cursorX, cursorY);
+	a3mouseSetState(demoState->demoState->mouse, (a3_MouseButton)button, a3input_down);
+	a3mouseSetPosition(demoState->demoState->mouse, cursorX, cursorY);
 }
 
 // mouse button is double-clicked
-A3DYLIBSYMBOL void a3demoCB_mouseDoubleClick(a3_DemoState* demoState, a3i32 button, a3i32 cursorX, a3i32 cursorY)
+A3DYLIBSYMBOL void a3demoCB_mouseDoubleClick(a3_NetworkState* demoState, a3i32 button, a3i32 cursorX, a3i32 cursorY)
 {
 	// persistent state update
-	a3mouseSetState(demoState->mouse, (a3_MouseButton)button, a3input_down);
-	a3mouseSetPosition(demoState->mouse, cursorX, cursorY);
+	a3mouseSetState(demoState->demoState->mouse, (a3_MouseButton)button, a3input_down);
+	a3mouseSetPosition(demoState->demoState->mouse, cursorX, cursorY);
 }
 
 // mouse button is released
-A3DYLIBSYMBOL void a3demoCB_mouseRelease(a3_DemoState* demoState, a3i32 button, a3i32 cursorX, a3i32 cursorY)
+A3DYLIBSYMBOL void a3demoCB_mouseRelease(a3_NetworkState* demoState, a3i32 button, a3i32 cursorX, a3i32 cursorY)
 {
 	// persistent state update
-	a3mouseSetState(demoState->mouse, (a3_MouseButton)button, a3input_up);
-	a3mouseSetPosition(demoState->mouse, cursorX, cursorY);
+	a3mouseSetState(demoState->demoState->mouse, (a3_MouseButton)button, a3input_up);
+	a3mouseSetPosition(demoState->demoState->mouse, cursorX, cursorY);
 }
 
 // mouse wheel is turned
-A3DYLIBSYMBOL void a3demoCB_mouseWheel(a3_DemoState* demoState, a3i32 delta, a3i32 cursorX, a3i32 cursorY)
+A3DYLIBSYMBOL void a3demoCB_mouseWheel(a3_NetworkState* demoState, a3i32 delta, a3i32 cursorX, a3i32 cursorY)
 {
 	// persistent state update
-	a3mouseSetStateWheel(demoState->mouse, (a3_MouseWheelState)delta);
-	a3mouseSetPosition(demoState->mouse, cursorX, cursorY);
+	a3mouseSetStateWheel(demoState->demoState->mouse, (a3_MouseWheelState)delta);
+	a3mouseSetPosition(demoState->demoState->mouse, cursorX, cursorY);
 	// controlled camera when zooming
 	/*a3_DemoCamera *camera;
 
@@ -972,17 +976,17 @@ A3DYLIBSYMBOL void a3demoCB_mouseWheel(a3_DemoState* demoState, a3i32 delta, a3i
 }
 
 // mouse moves
-A3DYLIBSYMBOL void a3demoCB_mouseMove(a3_DemoState* demoState, a3i32 cursorX, a3i32 cursorY)
+A3DYLIBSYMBOL void a3demoCB_mouseMove(a3_NetworkState* demoState, a3i32 cursorX, a3i32 cursorY)
 {
 	// persistent state update
-	a3mouseSetPosition(demoState->mouse, cursorX, cursorY);
+	a3mouseSetPosition(demoState->demoState->mouse, cursorX, cursorY);
 }
 
 // mouse leaves window
-A3DYLIBSYMBOL void a3demoCB_mouseLeave(a3_DemoState* demoState)
+A3DYLIBSYMBOL void a3demoCB_mouseLeave(a3_NetworkState* demoState)
 {
 	// reset mouse state or any buttons pressed will freeze
-	a3mouseReset(demoState->mouse);
+	a3mouseReset(demoState->demoState->mouse);
 }
 
 
