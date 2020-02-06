@@ -40,6 +40,7 @@
 #include "RakNet/BitStream.h"
 #include "RakNet/RakNetTypes.h"  // MessageID
 #include "a3_Networking/a3_Networking_gs_tictactoe.c"
+#include <string>
 
 enum GameMessages
 {
@@ -64,7 +65,7 @@ struct a3_NetworkState
 	unsigned int maxClients;
 	bool isClient;
 	char username[500];
-	bool tickTackToe;
+	
 
 	enum GameState
 	{
@@ -91,6 +92,9 @@ struct a3_NetworkState
 
 	GameState a3GameState;
 
+	bool ticTacToe;
+	gs_tictactoe ticTacToe_instance;
+	char board[500];
 	
 };
 
@@ -183,7 +187,7 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 {
 	//Clear color
 	glClear(GL_COLOR_BUFFER_BIT);
-
+	/*
 	a3framebufferDeactivateSetViewport(a3fbo_depthDisable, 0, 0, demoState->demoState->windowWidth, demoState->demoState->windowHeight);
 
 	const a3_DemoStateShaderProgram* currentDemoProgram = demoState->demoState->prog_drawTexture;
@@ -193,31 +197,22 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	a3mat4 spriteMat;
 
 	a3vec4 spritePos;
-	spritePos.x = .5;
-	spritePos.y= .5;
-	spritePos.z = 1;
+	spritePos.x = 500;
+	spritePos.y = 500;
+	spritePos.z = 0;
+	spritePos.w = 1;
 
 	
-	a3real4x4MakeOrthographicProjectionPlanes(projMat.m, 0, 1, 0, 1, 0, 0, 1);
-
-	a3shaderUniformSendFloatMat(a3unif_mat4, 0, currentDemoProgram->uP, 1, projMat.mm);
+	a3real4x4MakeOrthographicProjectionPlanes(projMat.m, 0, 1000, 0, 1000, 0, 0, 1);
 	a3real4x4SetNonUnif(spriteMat.m, 100, 100, 1);
 	a3real4x4Product(modelViewMat.m, projMat.m, spriteMat.m);
-	//a3real4x4ConcatL(modelViewMat.m, projMat.m);
-	//a3real4x4ConcatL(modelViewMat.m, spriteMat.m);
-
-	modelViewMat.v3 = spritePos;
-
+	spriteMat.v3 = spritePos;
 	a3shaderUniformSendFloatMat(a3unif_mat4, 0, currentDemoProgram->uMVP, 1, modelViewMat.mm);
 	a3textureActivate(demoState->demoState->tex_skybox_clouds, a3tex_unit00);
+	a3vertexDrawableActivateAndRender(demoState->demoState->draw_unitquad);*/
 
-	
-	glCullFace(GL_FRONT);
-	a3vertexDrawableActivateAndRender(demoState->demoState->draw_unitquad);
-	glCullFace(GL_BACK);
 
 	//draw some text
-
 	switch (demoState->a3GameState)
 	{
 	case a3_NetworkState::GameState::ENTER_PORT:
@@ -265,6 +260,11 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	{
 		//Render Challenger OPtions
 		//a3textDraw(demoState->text, -1, -1, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
+		if (demoState->ticTacToe)
+		{
+			a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "%s   %s", demoState->board, demoState->textInput);
+
+		}
 	}
 	break;
 	case a3_NetworkState::GameState::SPECTATOR:
@@ -378,7 +378,7 @@ void a3demoTestNetworking_Send(a3_NetworkState const* demoState)
 
 }
 
-void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
+void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, char(&board)[500])
 {
 	for (int i = 32; i < 127; i++)
 	{
@@ -472,12 +472,58 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 			{
 				if (input[0] == 't' || input[0] == 'T')
 				{
-					demoState->tickTackToe = true;
-					launchTicTacToe();
+					demoState->ticTacToe = true;
+					launchTicTacToe(demoState->ticTacToe_instance);
 				}
 				else
 				{
-					demoState->tickTackToe = false;
+					demoState->ticTacToe = false;
+				}
+				demoState->a3GameState = a3_NetworkState::CHALLENGER;
+			}
+			break;
+			case a3_NetworkState::GameState::CHALLENGER:
+			{
+				if (demoState->ticTacToe)
+				{
+					bool madeMove = false;
+					if (input[0] == 'O' || input[0] == 'o')
+					{
+						gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_o, (int)input[1], (int)input[2]);
+						madeMove = true;
+						printf("O move\n");
+					}
+					else if (input[0] == 'X' || input[0] == 'x')
+					{
+						gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_x, (int)input[1], (int)input[2]);
+						madeMove = true;
+						printf("X move\n");
+					}
+					if (madeMove)
+					{
+						std::fill(board, board + 500, '.');
+						int boardIndex = 0;
+						for (int i = 0; i < 3; i++)
+						{
+							for (int j = 0; j < 3; j++)
+							{
+								gs_tictactoe_space_state spaceState = gs_tictactoe_getSpaceState(demoState->ticTacToe_instance, i, j);
+								if (spaceState == gs_tictactoe_space_state::gs_tictactoe_space_open) {
+									board[boardIndex] = '*';
+								}
+								else if (spaceState == gs_tictactoe_space_state::gs_tictactoe_space_o) {
+									board[boardIndex] = 'O';
+								}
+								else if (spaceState == gs_tictactoe_space_state::gs_tictactoe_space_x) {
+									board[boardIndex] = 'X';
+								}
+								boardIndex++;
+							}
+							board[boardIndex] = '|';
+							boardIndex++;
+						}
+					}
+					
 				}
 			}
 			break;
@@ -600,7 +646,7 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 
 		demoState->a3GameState = a3_NetworkState::ENTER_PORT;
 
-		/*
+		
 
 
 		// enable asset streaming between loads
@@ -614,14 +660,14 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 		a3demo_setDefaultGraphicsState();
 
 		// geometry
-		a3demo_loadGeometry(demoState);
+		a3demo_loadGeometry(demoState->demoState);
 
 		// shaders
-		a3demo_loadShaders(demoState);
+		a3demo_loadShaders(demoState->demoState);
 
 		// scene objects
-		a3demo_initScene(demoState);
-		*/
+		a3demo_initScene(demoState->demoState);
+		
 	}
 
 	// return persistent state pointer
@@ -691,7 +737,7 @@ A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_NetworkState* demoState)
 			//a3demo_input(demoState, demoState->renderTimer->secondsPerTick);
 			//a3demo_render(demoState);
 
-			a3demoTestInput(demoState, demoState->textInput, demoState->inputIndex);//Test GameLogic
+			a3demoTestInput(demoState, demoState->textInput, demoState->inputIndex, demoState->board);//Test GameLogic
 			//Send
 			a3demoTestNetworking_Send(demoState);
 			a3demoTestUpdate(demoState);//Update Game Values
