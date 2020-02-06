@@ -39,6 +39,7 @@
 #include "RakNet/MessageIdentifiers.h"
 #include "RakNet/BitStream.h"
 #include "RakNet/RakNetTypes.h"  // MessageID
+#include "ButtonObject.h"
 
 enum GameMessages
 {
@@ -86,6 +87,8 @@ struct a3_NetworkState
 	int inputIndex;
 
 	GameState a3GameState;
+
+	ButtonObject button[1];
 
 };
 
@@ -183,25 +186,16 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 
 	const a3_DemoStateShaderProgram* currentDemoProgram = demoState->demoState->prog_drawTexture;
 	a3shaderProgramActivate(currentDemoProgram->program);
+	
 	a3mat4 projMat;
-	a3mat4 modelViewMat;
-	a3mat4 spriteMat;
-
-	a3vec4 spritePos;
-	spritePos.x = 50;
-	spritePos.y= 50;
-	spritePos.z = 0;
-	spritePos.w = 1;
-
-	
 	a3real4x4MakeOrthographicProjectionPlanes(projMat.m, 0, (a3real)demoState->demoState->windowWidth, 0, (a3real)demoState->demoState->windowHeight, 0, 0, 1);
-	a3real4x4SetNonUnif(spriteMat.m, 500, 500, 1);
-	spriteMat.v3 = spritePos;
-	a3real4x4Product(modelViewMat.m, projMat.m, spriteMat.m);
-	a3shaderUniformSendFloatMat(a3unif_mat4, 0, currentDemoProgram->uMVP, 1, modelViewMat.mm);
-	a3textureActivate(demoState->demoState->tex_skybox_clouds, a3tex_unit00);	
-	a3vertexDrawableActivateAndRender(demoState->demoState->draw_unitquad);
-	
+	//Button Render
+	//{
+
+	demoState->button->Render(demoState->demoState, currentDemoProgram, projMat);
+	a3textureDeactivate(a3tex_unit00);
+	a3shaderProgramDeactivate();
+	//}
 
 	//draw some text
 
@@ -610,6 +604,8 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 
 		// scene objects
 		a3demo_initScene(demoState->demoState);
+
+		demoState->button->Init(demoState->demoState->tex_earth_dm, 0, 0, 20, 20);
 		
 	}
 
