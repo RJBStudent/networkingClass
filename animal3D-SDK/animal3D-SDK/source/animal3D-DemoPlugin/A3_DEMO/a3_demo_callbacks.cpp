@@ -178,7 +178,7 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 {
 	//Clear color
 	glClear(GL_COLOR_BUFFER_BIT);
-
+	
 	a3framebufferDeactivateSetViewport(a3fbo_depthDisable, 0, 0, demoState->demoState->windowWidth, demoState->demoState->windowHeight);
 
 	const a3_DemoStateShaderProgram* currentDemoProgram = demoState->demoState->prog_drawTexture;
@@ -188,28 +188,20 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	a3mat4 spriteMat;
 
 	a3vec4 spritePos;
-	spritePos.x = .5;
-	spritePos.y= .5;
-	spritePos.z = 1;
+	spritePos.x = 50;
+	spritePos.y= 50;
+	spritePos.z = 0;
+	spritePos.w = 1;
 
 	
-	a3real4x4MakeOrthographicProjectionPlanes(projMat.m, 0, 1, 0, 1, 0, 0, 1);
-
-	a3shaderUniformSendFloatMat(a3unif_mat4, 0, currentDemoProgram->uP, 1, projMat.mm);
-	a3real4x4SetNonUnif(spriteMat.m, 100, 100, 1);
+	a3real4x4MakeOrthographicProjectionPlanes(projMat.m, 0, (a3real)demoState->demoState->windowWidth, 0, (a3real)demoState->demoState->windowHeight, 0, 0, 1);
+	a3real4x4SetNonUnif(spriteMat.m, 500, 500, 1);
+	spriteMat.v3 = spritePos;
 	a3real4x4Product(modelViewMat.m, projMat.m, spriteMat.m);
-	//a3real4x4ConcatL(modelViewMat.m, projMat.m);
-	//a3real4x4ConcatL(modelViewMat.m, spriteMat.m);
-
-	modelViewMat.v3 = spritePos;
-
 	a3shaderUniformSendFloatMat(a3unif_mat4, 0, currentDemoProgram->uMVP, 1, modelViewMat.mm);
-	a3textureActivate(demoState->demoState->tex_skybox_clouds, a3tex_unit00);
-
-	
-	glCullFace(GL_FRONT);
+	a3textureActivate(demoState->demoState->tex_skybox_clouds, a3tex_unit00);	
 	a3vertexDrawableActivateAndRender(demoState->demoState->draw_unitquad);
-	glCullFace(GL_BACK);
+	
 
 	//draw some text
 
@@ -554,11 +546,11 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 		memset(demoState, 0, stateSize);
 		*demoState = copy;
 		a3trigInitSetTables(trigSamplesPerDegree, demoState->demoState->trigTable);
-		/*
+		
 				// call refresh to re-link pointers in case demo state address changed
-				a3demo_refresh(demoState);
-				a3demo_initSceneRefresh(demoState);
-				*/
+				a3demo_refresh(demoState->demoState);
+				a3demo_initSceneRefresh(demoState->demoState);
+				
 	}
 
 	// do any initial allocation tasks
@@ -594,11 +586,11 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 
 		demoState->a3GameState = a3_NetworkState::ENTER_PORT;
 
-		/*
+	
 
 
 		// enable asset streaming between loads
-	//	demoState->streaming = 1;
+		//demoState->demoState->streaming = 1;
 
 
 		// create directory for data
@@ -608,14 +600,17 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 		a3demo_setDefaultGraphicsState();
 
 		// geometry
-		a3demo_loadGeometry(demoState);
+		a3demo_loadGeometry(demoState->demoState);
 
 		// shaders
-		a3demo_loadShaders(demoState);
+		a3demo_loadShaders(demoState->demoState);
+
+		// textures
+		a3demo_loadTextures(demoState->demoState);
 
 		// scene objects
-		a3demo_initScene(demoState);
-		*/
+		a3demo_initScene(demoState->demoState);
+		
 	}
 
 	// return persistent state pointer
@@ -638,14 +633,15 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_unload(a3_NetworkState* demoState, a3boo
 	if (!hotbuild)
 	{
 		// free fixed objects
-		/*
+		
 		// free graphics objects
-		a3demo_unloadGeometry(demoState);
-		a3demo_unloadShaders(demoState);
+		a3demo_unloadGeometry(demoState->demoState);
+		a3demo_unloadShaders(demoState->demoState);
+		a3demo_unloadTextures(demoState->demoState);
 
 		// validate unload
-		a3demo_validateUnload(demoState);
-		*/
+		a3demo_validateUnload(demoState->demoState);
+		
 		a3textRelease(demoState->demoState->text);
 		// erase other stuff
 		a3trigFree();
