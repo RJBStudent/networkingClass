@@ -40,12 +40,22 @@
 #include "RakNet/BitStream.h"
 #include "RakNet/RakNetTypes.h"  // MessageID
 #include "ButtonObject.h"
+#include <vector>
 
 enum GameMessages
 {
 	ID_GAME_MESSAGE_1 = ID_USER_PACKET_ENUM + 1,
 	ID_CLIENT_GREETING,
 };
+
+#pragma pack(push, 1)
+struct UserMessage
+{
+	int messageId = 0;
+	char username[512];
+	char message[512];
+};
+#pragma pack(pop)
 
 
 struct a3_NetworkState
@@ -63,7 +73,9 @@ struct a3_NetworkState
 	unsigned short serverPort;
 	unsigned int maxClients;
 	bool isClient;
+	bool connected;
 	char username[500];
+	RakNet::SystemAddress connectedAddres;
 
 	enum GameState
 	{
@@ -89,6 +101,8 @@ struct a3_NetworkState
 	GameState a3GameState;
 
 	ButtonObject button[1];
+
+	std::vector<UserMessage> messageList;
 
 };
 
@@ -256,8 +270,17 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	break;
 	case a3_NetworkState::GameState::CHAT:
 	{
+		a3real val = 0.1f;
+		
+
 		//Render Chat
-		//a3textDraw(demoState->text, -1, -1, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
+		for ( UserMessage um : demoState->messageList)
+		{
+			a3textDraw(demoState->demoState->text, -1, val, -1, 1, 1, 1, 1, "%s : %s", um.username, um.message);
+			val += 0.1f;
+		}
+
+		a3textDraw(demoState->demoState->text, -1, -1, -1, 1, 1, 1, 1, "Chat Message:  %s", demoState->textInput);
 	}
 	break;
 	default:
@@ -267,7 +290,7 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 }
 
 
-void a3demoTestNetworking_Receive(a3_NetworkState const* demoState)
+void a3demoTestNetworking_Receive(a3_NetworkState*  demoState)
 {
 	//raknet business
 	RakNet::Packet* packet;
@@ -293,13 +316,17 @@ void a3demoTestNetworking_Receive(a3_NetworkState const* demoState)
 		case ID_CONNECTION_REQUEST_ACCEPTED:
 		{
 			printf("Our connection request has been accepted.\n");
-			/*
-			RakNet::BitStream bsOut;
-			bsOut.Write((RakNet::MessageID)ID_CLIENT_GREETING);
-			bsOut.Write(userName);
-			peer->Send(&bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
-			addressConnected = packet->systemAddress;
-			connected = true;*/
+			demoState->connectedAddres = packet->systemAddress;
+			
+			UserMessage myMessage;
+
+			strcpy(myMessage.message, "");
+			myMessage.messageId = ID_CLIENT_GREETING;
+			strcpy(myMessage.username, demoState->username);
+			demoState->peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage),
+				HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->connectedAddres, false);
+			
+			demoState->connected = true;
 		}
 		break;
 		case ID_NEW_INCOMING_CONNECTION:
@@ -336,11 +363,47 @@ void a3demoTestNetworking_Receive(a3_NetworkState const* demoState)
 		case ID_GAME_MESSAGE_1:
 		{
 
+			UserMessage* incommingMessage = (UserMessage*)packet->data;
+
+			if (!demoState->isClient)
+			{
+				printf("\n %s: %s\n", incommingMessage->username, incommingMessage->message);
+				UserMessage myMessage;
+				myMessage.messageId = ID_GAME_MESSAGE_1;
+				strcpy(myMessage.username, incommingMessage->username);
+				strcpy(myMessage.message, incommingMessage->message);
+				demoState->peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, true);
+
+			}
+
+			else
+			{
+				printf("\n %s: %s\n", incommingMessage->username, incommingMessage->message);
+			}
+
+			demoState->messageList.push_back(*incommingMessage);
 			
 		}
 		break;
 		case ID_CLIENT_GREETING:
 		{
+			UserMessage* incommingMessage = (UserMessage*)packet->data;			
+						
+			printf("Sending Respone to user.. %s", incommingMessage->username);
+			UserMessage myMessage;
+			memset(myMessage.message, 0, 512);
+			myMessage.messageId = ID_GAME_MESSAGE_1;
+			strcpy(myMessage.username, "Server");
+			strcpy(myMessage.message, "You have connected!");
+			demoState->peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
+		
+			char message[512];
+			strcpy(message, " has Joined");						
+			strcpy(myMessage.username, incommingMessage->username);
+			strcpy(myMessage.message, message);
+			demoState->peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, true);
+
+				
 			
 
 		}
@@ -363,7 +426,7 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 {
 	for (int i = 32; i < 127; i++)
 	{
-		if (demoState->demoState->keyboard->key.key[i] && !demoState->demoState->keyboard->key0.key[i])
+		if (demoState->demoState->keyboard->keyASCII.key[i] && !demoState->demoState->keyboard->keyASCII0.key[i])
 		{
 			if (demoState->inputIndex <= 500)
 			{
@@ -374,7 +437,7 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 		}
 	}
 
-	if (demoState->demoState->keyboard->key.key[8]&& !demoState->demoState->keyboard->key0.key[8])
+	if (demoState->demoState->keyboard->keyASCII.key[8]&& !demoState->demoState->keyboard->keyASCII0.key[8])
 	{
 		if (demoState->inputIndex > 0)
 		{
@@ -405,7 +468,7 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 			case a3_NetworkState::GameState::ENTER_USERNAME:
 			{
 				strcpy(demoState->username, input);
-				demoState->a3GameState = a3_NetworkState::START_SERVER_OR_CLIENT;
+				demoState->a3GameState = a3_NetworkState::ENTER_SERVER_IP;
 			}
 			break;
 			case a3_NetworkState::GameState::START_SERVER_OR_CLIENT:
@@ -415,7 +478,7 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 					RakNet::SocketDescriptor sd;
 					demoState->peer->Startup(1, &sd, 1);
 					demoState->isClient = true;
-					demoState->a3GameState = a3_NetworkState::ENTER_SERVER_IP;
+					demoState->a3GameState = a3_NetworkState::ENTER_USERNAME;
 				}
 				else
 				{
@@ -431,7 +494,7 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 					strcpy(input, "127.0.0.1");
 				}
 				demoState->peer->Connect(input, demoState->serverPort, 0, 0);
-				demoState->a3GameState = a3_NetworkState::JOIN_GAME;
+				demoState->a3GameState = a3_NetworkState::JOIN_GAME;				
 			}
 			break;
 			case a3_NetworkState::GameState::ENTER_MAX_CLIENTS:
@@ -453,12 +516,44 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 			{
 				if (input[0] == 't' || input[0] == 'T')
 				{
-					
+					//tic tac toe
 				}
 				else
 				{
-
+					//checkers????
 				}
+
+				//Play or spectate
+
+				//TEMPORARY SEND TO CHAT
+				demoState->a3GameState = a3_NetworkState::CHAT;
+			}
+			break;
+			case a3_NetworkState::GameState::JOIN_GAME:
+			{
+				if (input[0] == 'c' || input[0] == 'C')
+				{
+					//JOIN Game
+				}				
+				else
+				{
+					//Spectate game
+				}
+				//TEMPORARY SEND TO CHAT
+				demoState->a3GameState = a3_NetworkState::CHAT;
+			}
+			break;
+			case a3_NetworkState::GameState::CHAT:
+			{
+				
+					UserMessage myMessage;
+
+					strcpy(myMessage.message, input);
+					myMessage.messageId = ID_GAME_MESSAGE_1;
+					strcpy(myMessage.username, demoState->username);					
+					demoState->peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), 
+						HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->connectedAddres, !demoState->isClient);
+				
 			}
 			break;
 			default:
@@ -471,8 +566,7 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 	//do Input
 	if (a3mouseIsPressed(demoState->demoState->mouse, a3mouse_left))
 	{
-		printf("X : %i Y : %i\n", demoState->demoState->mouse->x,
-			(a3i32)((a3real)demoState->demoState->windowHeight* (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight))));
+		
 		if (demoState->button->ButtonClickCheck(demoState->demoState->mouse->x,
 			(a3i32) ((a3real)demoState->demoState->windowHeight *(1.0-((a3real)demoState->demoState->mouse->y/ (a3real)demoState->demoState->windowHeight)))))
 		{
