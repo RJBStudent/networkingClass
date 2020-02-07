@@ -469,11 +469,22 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 	}
 
 	//do Input
+	if (a3mouseIsPressed(demoState->demoState->mouse, a3mouse_left))
+	{
+		printf("X : %i Y : %i\n", demoState->demoState->mouse->x,
+			(a3i32)((a3real)demoState->demoState->windowHeight* (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight))));
+		if (demoState->button->ButtonClickCheck(demoState->demoState->mouse->x,
+			(a3i32) ((a3real)demoState->demoState->windowHeight *(1.0-((a3real)demoState->demoState->mouse->y/ (a3real)demoState->demoState->windowHeight)))))
+		{
+			printf("Pressed!!!");
+		}
+	}
 }
 
 void a3demoTestUpdate(a3_NetworkState const* demoState)
 {
 	//Update
+	
 }
 
 //-----------------------------------------------------------------------------
@@ -605,7 +616,7 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 		// scene objects
 		a3demo_initScene(demoState->demoState);
 
-		demoState->button->Init(demoState->demoState->tex_earth_dm, 0, 0, 20, 20);
+		demoState->button->Init(demoState->demoState->tex_earth_dm, 300, 300, 100, 100);
 		
 	}
 

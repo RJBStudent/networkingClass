@@ -16,7 +16,7 @@ public:
 
 	void Render(const a3_DemoState* demoState, const a3_DemoStateShaderProgram* currentDemoProgram, a3mat4 projMat) const;
 
-	bool ButtonClickCheck(a3real mouseX, a3real mouseY);
+	bool ButtonClickCheck(a3i32 mouseX, a3i32 mouseY) const;
 
 
 private:	   
@@ -54,11 +54,11 @@ void ButtonObject::Init(const a3_Texture* texture, a3real xPos, a3real yPos, a3r
 }
 
 
-bool ButtonObject::ButtonClickCheck(a3real mouseX, a3real mouseY)
+bool ButtonObject::ButtonClickCheck(a3i32 mouseX, a3i32 mouseY) const
 {
 	//center point is where it is drawing
-
-	if ((mouseX > spritePos.x&& mouseX < spritePos.x + spriteWidth) && (mouseY > spritePos.y&& mouseY < spritePos.y + spriteHeight))
+	if ((mouseX > spritePos.x - (spriteWidth) && mouseX < spritePos.x + (spriteWidth)) && 
+		(mouseY > spritePos.y - (spriteHeight) && mouseY < spritePos.y + (spriteHeight)))
 	{
 		return true;
 	}
