@@ -18,6 +18,7 @@ public:
 
 	bool ButtonClickCheck(a3i32 mouseX, a3i32 mouseY) const;
 
+	void SetTexture(a3_Texture* texture);
 
 private:	   
 	const a3_Texture *buttonTexture;
@@ -36,6 +37,11 @@ ButtonObject::ButtonObject()
 
 ButtonObject::~ButtonObject()
 {
+}
+
+void ButtonObject::SetTexture(a3_Texture* texture)
+{
+	buttonTexture = texture;
 }
 
 void ButtonObject::Init(const a3_Texture* texture, a3real xPos, a3real yPos, a3real width, a3real height, a3real sheetXPos , a3real sheetYPos )

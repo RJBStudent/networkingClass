@@ -39,6 +39,8 @@
 #include "RakNet/MessageIdentifiers.h"
 #include "RakNet/BitStream.h"
 #include "RakNet/RakNetTypes.h"  // MessageID
+#include "a3_Networking/a3_Networking_gs_tictactoe.c"
+#include <string>
 #include "ButtonObject.h"
 #include <vector>
 
@@ -95,15 +97,21 @@ struct a3_NetworkState
 
 	};
 
+	
+
 	char textInput[500];
 	int inputIndex;
 
 	GameState a3GameState;
 
-	ButtonObject button[1];
+	ButtonObject button[3][3];
 
 	std::vector<UserMessage> messageList;
 
+	bool ticTacToe;
+	gs_tictactoe ticTacToe_instance;
+	char board[500];
+	
 };
 
 
@@ -206,13 +214,20 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	//Button Render
 	//{
 
-	demoState->button->Render(demoState->demoState, currentDemoProgram, projMat);
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			//demoState->button->Render(demoState->demoState, currentDemoProgram, projMat);
+			demoState->button[i][j].Render(demoState->demoState, currentDemoProgram, projMat);
+		}
+	}
+	
 	a3textureDeactivate(a3tex_unit00);
 	a3shaderProgramDeactivate();
 	//}
 
 	//draw some text
-
 	switch (demoState->a3GameState)
 	{
 	case a3_NetworkState::GameState::ENTER_PORT:
@@ -243,7 +258,7 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	break;
 	case a3_NetworkState::GameState::PICK_GAME:
 	{
-		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "Pick Game:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "TicTacToe(T) or BattleShip(B):  %s", demoState->textInput);
 	}
 	break;
 	case a3_NetworkState::GameState::JOIN_GAME:
@@ -260,6 +275,11 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	{
 		//Render Challenger OPtions
 		//a3textDraw(demoState->text, -1, -1, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
+		if (demoState->ticTacToe)
+		{
+			a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "%s   %s", demoState->board, demoState->textInput);
+
+		}
 	}
 	break;
 	case a3_NetworkState::GameState::SPECTATOR:
@@ -422,7 +442,7 @@ void a3demoTestNetworking_Send(a3_NetworkState const* demoState)
 
 }
 
-void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
+void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, char(&board)[500])
 {
 	for (int i = 32; i < 127; i++)
 	{
@@ -516,31 +536,14 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 			{
 				if (input[0] == 't' || input[0] == 'T')
 				{
-					//tic tac toe
+					demoState->ticTacToe = true;
+					launchTicTacToe(demoState->ticTacToe_instance);
 				}
 				else
 				{
-					//checkers????
+					demoState->ticTacToe = false;
 				}
-
-				//Play or spectate
-
-				//TEMPORARY SEND TO CHAT
-				demoState->a3GameState = a3_NetworkState::CHAT;
-			}
-			break;
-			case a3_NetworkState::GameState::JOIN_GAME:
-			{
-				if (input[0] == 'c' || input[0] == 'C')
-				{
-					//JOIN Game
-				}				
-				else
-				{
-					//Spectate game
-				}
-				//TEMPORARY SEND TO CHAT
-				demoState->a3GameState = a3_NetworkState::CHAT;
+				demoState->a3GameState = a3_NetworkState::CHALLENGER;
 			}
 			break;
 			case a3_NetworkState::GameState::CHAT:
@@ -556,6 +559,51 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 				
 			}
 			break;
+			case a3_NetworkState::GameState::CHALLENGER:
+			{
+				if (demoState->ticTacToe)
+				{
+					bool madeMove = false;
+					if (input[0] == 'O' || input[0] == 'o')
+					{
+						gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_o, (int)input[1], (int)input[2]);
+						madeMove = true;
+						printf("O move\n");
+					}
+					else if (input[0] == 'X' || input[0] == 'x')
+					{
+						gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_x, (int)input[1], (int)input[2]);
+						madeMove = true;
+						printf("X move\n");
+					}
+					if (madeMove)
+					{
+						std::fill(board, board + 500, '.');
+						int boardIndex = 0;
+						for (int i = 0; i < 3; i++)
+						{
+							for (int j = 0; j < 3; j++)
+							{
+								gs_tictactoe_space_state spaceState = gs_tictactoe_getSpaceState(demoState->ticTacToe_instance, i, j);
+								if (spaceState == gs_tictactoe_space_state::gs_tictactoe_space_open) {
+									board[boardIndex] = '*';
+								}
+								else if (spaceState == gs_tictactoe_space_state::gs_tictactoe_space_o) {
+									board[boardIndex] = 'O';
+								}
+								else if (spaceState == gs_tictactoe_space_state::gs_tictactoe_space_x) {
+									board[boardIndex] = 'X';
+								}
+								boardIndex++;
+							}
+							board[boardIndex] = '|';
+							boardIndex++;
+						}
+					}
+					
+				}
+			}
+			break;
 			default:
 			{}
 		}
@@ -567,10 +615,40 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index)
 	if (a3mouseIsPressed(demoState->demoState->mouse, a3mouse_left))
 	{
 		
-		if (demoState->button->ButtonClickCheck(demoState->demoState->mouse->x,
+		/*if (demoState->button->ButtonClickCheck(demoState->demoState->mouse->x,
 			(a3i32) ((a3real)demoState->demoState->windowHeight *(1.0-((a3real)demoState->demoState->mouse->y/ (a3real)demoState->demoState->windowHeight)))))
 		{
 			printf("Pressed!!!");
+		}*/
+		for (int i = 0; i < 3; i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				//demoState->button->Init(demoState->demoState->tex_earth_dm, 300, 300, 100, 100);
+				if (demoState->button[i][j].ButtonClickCheck(demoState->demoState->mouse->x,
+					(a3i32)((a3real)demoState->demoState->windowHeight * (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight)))))
+				{
+					if (gs_tictactoe_getSpaceState(demoState->ticTacToe_instance, i, j) == gs_tictactoe_space_state::gs_tictactoe_space_open)
+					{
+						gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_x, i, j);
+						if (gs_tictactoe_getSpaceState(demoState->ticTacToe_instance, i, j) == gs_tictactoe_space_state::gs_tictactoe_space_x)
+						{
+							demoState->button[i][j].SetTexture(demoState->demoState->tex_skybox_clouds);
+
+							UserMessage myMessage;
+
+							std::string gameMove = "GAMEMOVE" + std::to_string(i) + std::to_string(j) + "X";
+							strcpy(myMessage.message, gameMove.c_str());
+
+							myMessage.messageId = ID_GAME_MESSAGE_1;
+							strcpy(myMessage.username, demoState->username);
+							demoState->peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage),
+								HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->connectedAddres, !demoState->isClient);
+						}
+					}
+					
+				}
+			}
 		}
 	}
 }
@@ -710,7 +788,16 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 		// scene objects
 		a3demo_initScene(demoState->demoState);
 
-		demoState->button->Init(demoState->demoState->tex_earth_dm, 300, 300, 100, 100);
+
+		for (int i = 0; i < 3; i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				//demoState->button->Init(demoState->demoState->tex_earth_dm, 300, 300, 100, 100);
+				demoState->button[i][j].Init(demoState->demoState->tex_earth_dm, a3real(300 + i*80), a3real(300 + j * 80), 40, 40);
+			}
+		}
+		
 		
 	}
 
@@ -782,7 +869,7 @@ A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_NetworkState* demoState)
 			//a3demo_input(demoState, demoState->renderTimer->secondsPerTick);
 			//a3demo_render(demoState);
 
-			a3demoTestInput(demoState, demoState->textInput, demoState->inputIndex);//Test GameLogic
+			a3demoTestInput(demoState, demoState->textInput, demoState->inputIndex, demoState->board);//Test GameLogic
 			//Send
 			a3demoTestNetworking_Send(demoState);
 			a3demoTestUpdate(demoState);//Update Game Values
