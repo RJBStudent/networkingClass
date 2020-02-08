@@ -48,6 +48,9 @@ enum GameMessages
 {
 	ID_GAME_MESSAGE_1 = ID_USER_PACKET_ENUM + 1,
 	ID_CLIENT_GREETING,
+	TIC_TAC_TOE_MESSAGE,
+	JOIN_GAME
+
 };
 
 #pragma pack(push, 1)
@@ -59,6 +62,31 @@ struct UserMessage
 };
 #pragma pack(pop)
 
+#pragma pack(push, 1)
+struct TicTacToeMessage
+{
+	int messageId = 0;
+	bool isO;
+	int xPos;
+	int yPos;
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct JoinGameRequestMessage
+{
+	int messageId = 0;
+	char username[512];
+};
+#pragma pack(pop)
+
+struct PlayerData
+{
+	RakNet::SystemAddress address;
+	char username[512];
+};
+
+const int MAX_CLIENTS = 12;
 
 struct a3_NetworkState
 {
@@ -79,6 +107,8 @@ struct a3_NetworkState
 	char username[500];
 	RakNet::SystemAddress connectedAddres;
 
+
+
 	enum GameState
 	{
 		NO_STATE = 0,
@@ -90,22 +120,30 @@ struct a3_NetworkState
 		PICK_GAME,
 		JOIN_GAME,
 		SELECT_PLAYERS,
-		CHALLENGER,
+		CHALLENGER_YOUR_TURN,
+		CHALLENGER_TURN,
+		WAITING_TO_JOIN_GAME,
 		SPECTATOR,
 		CHAT,
 		GAMESTATE_COUNT
 
 	};
 
-	
+
+	int currentPlayerIndex = 0;
+	PlayerData players[2];
+	std::vector<PlayerData> playersRequestingPlay;
 
 	char textInput[500];
 	int inputIndex;
 
 	GameState a3GameState;
+	GameState a3LastGameState;
 
 	ButtonObject button[3][3];
 
+	ButtonObject chatButton[1];
+	ButtonObject selectUserButtons[MAX_CLIENTS];
 	std::vector<UserMessage> messageList;
 
 	bool ticTacToe;
@@ -150,39 +188,7 @@ inline void a3demoCB_keyCharPress_main(a3_NetworkState* demoState, a3i32 asciiKe
 	const a3ui32 demoSubMode, const a3ui32 demoOutput,
 	const a3ui32 demoSubModeCount, const a3ui32 demoOutputCount)
 {
-	/*
-	switch (asciiKey)
-	{
-		// sub-modes
-	case '>':
-		break;
-	case '<':
-		break;
-
-		// toggle active camera
-//	case 'v':
-//		demoState->activeCamera = (demoState->activeCamera + 1) % demoStateMaxCount_cameraObject;
-//		break;
-//	case 'c':
-//		demoState->activeCamera = (demoState->activeCamera - 1 + demoStateMaxCount_cameraObject) % demoStateMaxCount_cameraObject;
-//		break;
-
-		// toggle skybox
-	case 'b':
-		demoState->displaySkybox = 1 - demoState->displaySkybox;
-		break;
-
-		// toggle hidden volumes
-	case 'h':
-		demoState->displayHiddenVolumes = 1 - demoState->displayHiddenVolumes;
-		break;
-
-		// toggle pipeline overlay
-	case 'o':
-		demoState->displayPipeline = 1 - demoState->displayPipeline;
-		break;
-	}
-	*/
+	
 }
 
 inline void a3demoCB_keyCharHold_main(a3_NetworkState* demoState, a3i32 asciiKey)
@@ -213,16 +219,31 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	a3real4x4MakeOrthographicProjectionPlanes(projMat.m, 0, (a3real)demoState->demoState->windowWidth, 0, (a3real)demoState->demoState->windowHeight, 0, 0, 1);
 	//Button Render
 	//{
-
-	for (int i = 0; i < 3; i++)
-	{
-		for (int j = 0; j < 3; j++)
+	if (demoState->connected) {
+		for (int i = 0; i < 3; i++)
 		{
-			//demoState->button->Render(demoState->demoState, currentDemoProgram, projMat);
-			demoState->button[i][j].Render(demoState->demoState, currentDemoProgram, projMat);
+			for (int j = 0; j < 3; j++)
+			{
+				//demoState->button->Render(demoState->demoState, currentDemoProgram, projMat);
+				demoState->button[i][j].Render(demoState->demoState, currentDemoProgram, projMat);
+			}
+		}
+
+		demoState->chatButton->Render(demoState->demoState, currentDemoProgram, projMat);
+	}
+
+	if (demoState->a3GameState == a3_NetworkState::GameState::SELECT_PLAYERS)
+	{
+		int count = 0;
+		for (PlayerData pd : demoState->playersRequestingPlay)
+		//while(count < MAX_CLIENTS)
+		{
+			printf("%i", count);
+			demoState->selectUserButtons[count].Render(demoState->demoState, currentDemoProgram, projMat);
+				count++;
 		}
 	}
-	
+
 	a3textureDeactivate(a3tex_unit00);
 	a3shaderProgramDeactivate();
 	//}
@@ -269,9 +290,20 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	case a3_NetworkState::GameState::SELECT_PLAYERS:
 	{
 		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "Select Players:  %s", demoState->textInput);
+
+		a3real xP = 0.4f;
+		int count = 0;
+		a3real yP = 0.7f;
+		for (PlayerData pd : demoState->playersRequestingPlay)
+		{
+		a3textDraw(demoState->demoState->text, xP, yP, -1, 0, 0, 0, 1, "%s", pd.username);
+		xP += (count % 2) * 90;
+		yP += (count % 2) * 60;
+		count++;
+		}
 	}
 	break;
-	case a3_NetworkState::GameState::CHALLENGER:
+	case a3_NetworkState::GameState::CHALLENGER_TURN:
 	{
 		//Render Challenger OPtions
 		//a3textDraw(demoState->text, -1, -1, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
@@ -280,6 +312,19 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 			a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "%s   %s", demoState->board, demoState->textInput);
 
 		}
+		a3textDraw(demoState->demoState->text, 0.4f, 0.8f, -1, 0, 0, 0, 1, "Chat");
+	}
+	break;
+	case a3_NetworkState::GameState::CHALLENGER_YOUR_TURN:
+	{
+		//Render Challenger OPtions
+		//a3textDraw(demoState->text, -1, -1, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
+		if (demoState->ticTacToe)
+		{
+			a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "%s   %s", demoState->board, demoState->textInput);
+
+		}
+		a3textDraw(demoState->demoState->text, 0.4f, 0.8f, -1, 0, 0, 0, 1, "Chat");
 	}
 	break;
 	case a3_NetworkState::GameState::SPECTATOR:
@@ -290,17 +335,18 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	break;
 	case a3_NetworkState::GameState::CHAT:
 	{
-		a3real val = 0.1f;
+		a3real val = 0.9f;
 		
 
 		//Render Chat
 		for ( UserMessage um : demoState->messageList)
 		{
 			a3textDraw(demoState->demoState->text, -1, val, -1, 1, 1, 1, 1, "%s : %s", um.username, um.message);
-			val += 0.1f;
+			val -= 0.1f;
 		}
 
 		a3textDraw(demoState->demoState->text, -1, -1, -1, 1, 1, 1, 1, "Chat Message:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, 0.35f, 0.8f, -1, 0, 0, 0, 1, "Exit Chat");
 	}
 	break;
 	default:
@@ -428,6 +474,20 @@ void a3demoTestNetworking_Receive(a3_NetworkState*  demoState)
 
 		}
 		break;
+		case TIC_TAC_TOE_MESSAGE:
+		{
+
+		}
+		break;
+		case JOIN_GAME:
+		{
+			JoinGameRequestMessage* incommingMessage = (JoinGameRequestMessage*)packet->data;
+			PlayerData newPlayer;
+			newPlayer.address = packet->systemAddress;			
+			strcpy(newPlayer.username, incommingMessage->username);
+			demoState->playersRequestingPlay.push_back(newPlayer);
+		}
+		break;
 		default:
 			printf("Message with identifier %i has arrived.\n", packet->data[0]);
 			break;
@@ -522,6 +582,9 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 				demoState->maxClients = atoi(input);
 				if (demoState->maxClients < 3)
 					demoState->maxClients = 3;
+				else if(demoState->maxClients > MAX_CLIENTS)
+					 demoState->maxClients = MAX_CLIENTS;
+
 
 				RakNet::SocketDescriptor sd(demoState->serverPort, 0);
 				demoState->peer->Startup(demoState->maxClients, &sd, 1);
@@ -529,7 +592,7 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 				printf("Starting the server.\n");
 				demoState->peer->SetMaximumIncomingConnections(demoState->maxClients);
 				demoState->a3GameState = a3_NetworkState::PICK_GAME;
-
+				demoState->connected = true;
 			}
 			break;
 			case a3_NetworkState::GameState::PICK_GAME:
@@ -543,7 +606,35 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 				{
 					demoState->ticTacToe = false;
 				}
-				demoState->a3GameState = a3_NetworkState::CHALLENGER;
+				demoState->a3GameState = a3_NetworkState::SELECT_PLAYERS;
+			}
+			break;
+			case a3_NetworkState::GameState::SELECT_PLAYERS:
+			{
+				//SHOW ALL PLAYERS AS BUTTONS
+			}
+			break;
+			case a3_NetworkState::GameState::JOIN_GAME:
+			{
+				if (input[0] == 's' || input[0] == 'S')
+				{
+					demoState->a3GameState= a3_NetworkState::GameState::SPECTATOR;
+				}
+				else
+				{
+					JoinGameRequestMessage myMessage;
+					myMessage.messageId = JOIN_GAME;
+					strcpy(myMessage.username, demoState->username);
+					demoState->peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), 
+						HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->connectedAddres,false);
+
+
+				}
+
+			}
+			break;
+			case a3_NetworkState::GameState::CHALLENGER_TURN:
+			{
 			}
 			break;
 			case a3_NetworkState::GameState::CHAT:
@@ -559,7 +650,7 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 				
 			}
 			break;
-			case a3_NetworkState::GameState::CHALLENGER:
+			case a3_NetworkState::GameState::CHALLENGER_YOUR_TURN:
 			{
 				if (demoState->ticTacToe)
 				{
@@ -612,9 +703,26 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 	}
 
 	//do Input
-	if (a3mouseIsPressed(demoState->demoState->mouse, a3mouse_left))
+	if (a3mouseIsPressed(demoState->demoState->mouse, a3mouse_left) )
 	{
-		
+		if (demoState->a3GameState == a3_NetworkState::GameState::SELECT_PLAYERS)
+		{
+			int count = 0;
+			for (PlayerData pd : demoState->playersRequestingPlay)
+			{
+				if (demoState->selectUserButtons[count].ButtonClickCheck(demoState->demoState->mouse->x,
+					(a3i32)((a3real)demoState->demoState->windowHeight * (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight)))))
+				{
+					demoState->players[demoState->currentPlayerIndex] = pd;
+					demoState->currentPlayerIndex++;
+				}
+				count++;
+			}
+		}
+
+
+		if (!demoState->connected)
+			return;
 		/*if (demoState->button->ButtonClickCheck(demoState->demoState->mouse->x,
 			(a3i32) ((a3real)demoState->demoState->windowHeight *(1.0-((a3real)demoState->demoState->mouse->y/ (a3real)demoState->demoState->windowHeight)))))
 		{
@@ -648,6 +756,20 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 					}
 					
 				}
+			}
+		}
+
+		if (demoState->chatButton->ButtonClickCheck(demoState->demoState->mouse->x,
+			(a3i32)((a3real)demoState->demoState->windowHeight * (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight)))))
+		{
+			if (demoState->a3GameState != a3_NetworkState::GameState::CHAT)
+			{
+				demoState->a3LastGameState = demoState->a3GameState;
+				demoState->a3GameState = a3_NetworkState::GameState::CHAT;
+			}
+			else
+			{
+				demoState->a3GameState = demoState->a3LastGameState;
 			}
 		}
 	}
@@ -797,7 +919,17 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 				demoState->button[i][j].Init(demoState->demoState->tex_earth_dm, a3real(300 + i*80), a3real(300 + j * 80), 40, 40);
 			}
 		}
+		demoState->chatButton->Init(demoState->demoState->tex_checker, 700, 500, 50, 25);
 		
+		int i = 0;
+		
+		for (int j = 0; j < MAX_CLIENTS; j++)
+		{
+			i += (j % 2) * 60;
+
+			demoState->selectUserButtons[j].Init(demoState->demoState->tex_checker,
+				a3real(600 + (j%2) * 90), a3real(10 + i), 40, 25);
+		}
 		
 	}
 
