@@ -104,7 +104,7 @@ struct a3_NetworkState
 
 	GameState a3GameState;
 
-	ButtonObject button[1];
+	ButtonObject button[3][3];
 
 	std::vector<UserMessage> messageList;
 
@@ -214,7 +214,15 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	//Button Render
 	//{
 
-	demoState->button->Render(demoState->demoState, currentDemoProgram, projMat);
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			//demoState->button->Render(demoState->demoState, currentDemoProgram, projMat);
+			demoState->button[i][j].Render(demoState->demoState, currentDemoProgram, projMat);
+		}
+	}
+	
 	a3textureDeactivate(a3tex_unit00);
 	a3shaderProgramDeactivate();
 	//}
@@ -607,10 +615,40 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 	if (a3mouseIsPressed(demoState->demoState->mouse, a3mouse_left))
 	{
 		
-		if (demoState->button->ButtonClickCheck(demoState->demoState->mouse->x,
+		/*if (demoState->button->ButtonClickCheck(demoState->demoState->mouse->x,
 			(a3i32) ((a3real)demoState->demoState->windowHeight *(1.0-((a3real)demoState->demoState->mouse->y/ (a3real)demoState->demoState->windowHeight)))))
 		{
 			printf("Pressed!!!");
+		}*/
+		for (int i = 0; i < 3; i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				//demoState->button->Init(demoState->demoState->tex_earth_dm, 300, 300, 100, 100);
+				if (demoState->button[i][j].ButtonClickCheck(demoState->demoState->mouse->x,
+					(a3i32)((a3real)demoState->demoState->windowHeight * (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight)))))
+				{
+					if (gs_tictactoe_getSpaceState(demoState->ticTacToe_instance, i, j) == gs_tictactoe_space_state::gs_tictactoe_space_open)
+					{
+						gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_x, i, j);
+						if (gs_tictactoe_getSpaceState(demoState->ticTacToe_instance, i, j) == gs_tictactoe_space_state::gs_tictactoe_space_x)
+						{
+							demoState->button[i][j].SetTexture(demoState->demoState->tex_skybox_clouds);
+
+							UserMessage myMessage;
+
+							std::string gameMove = "GAMEMOVE" + std::to_string(i) + std::to_string(j) + "X";
+							strcpy(myMessage.message, gameMove.c_str());
+
+							myMessage.messageId = ID_GAME_MESSAGE_1;
+							strcpy(myMessage.username, demoState->username);
+							demoState->peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage),
+								HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->connectedAddres, !demoState->isClient);
+						}
+					}
+					
+				}
+			}
 		}
 	}
 }
@@ -750,7 +788,16 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 		// scene objects
 		a3demo_initScene(demoState->demoState);
 
-		demoState->button->Init(demoState->demoState->tex_earth_dm, 300, 300, 100, 100);
+
+		for (int i = 0; i < 3; i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				//demoState->button->Init(demoState->demoState->tex_earth_dm, 300, 300, 100, 100);
+				demoState->button[i][j].Init(demoState->demoState->tex_earth_dm, a3real(300 + i*80), a3real(300 + j * 80), 40, 40);
+			}
+		}
+		
 		
 	}
 
