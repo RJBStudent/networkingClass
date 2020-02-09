@@ -134,7 +134,7 @@ struct a3_NetworkState
 
 	int currentPlayerIndex = 0;
 	PlayerData players[2];
-	std::vector<PlayerData> playersRequestingPlay;
+	std::vector<PlayerData*> playersRequestingPlay;
 
 	char textInput[500];
 	int inputIndex;
@@ -151,7 +151,10 @@ struct a3_NetworkState
 	bool ticTacToe;
 	gs_tictactoe ticTacToe_instance;
 	char board[500];
-	
+	bool isPlayerO = false;
+	bool isSpectator = false;
+	bool isMyTurn = false;
+
 };
 
 
@@ -161,6 +164,8 @@ struct JoinedGameMessage
 {
 	int messageId = 0;
 	a3_NetworkState::GameState state;
+	bool isPlayerO = false;
+	bool isMyTurn = false;
 };
 #pragma pack(pop)
 
@@ -247,7 +252,7 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	if (demoState->a3GameState == a3_NetworkState::GameState::SELECT_PLAYERS)
 	{
 		int count = 0;
-		for (PlayerData pd : demoState->playersRequestingPlay)
+		for (PlayerData* pd : demoState->playersRequestingPlay)
 		//while(count < MAX_CLIENTS)
 		{
 			demoState->selectUserButtons[count].Render(demoState->demoState, currentDemoProgram, projMat);
@@ -305,9 +310,9 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 		a3real xP = 0.2f;
 		int count = 0;
 		a3real yP = -0.8f;
-		for (PlayerData pd : demoState->playersRequestingPlay)
+		for (PlayerData* pd : demoState->playersRequestingPlay)
 		{
-		a3textDraw(demoState->demoState->text, xP, yP, -1, 1, 0, 0, 1, "%s", pd.username);
+		a3textDraw(demoState->demoState->text, xP, yP, -1, 1, 0, 0, 1, "%s", pd->username);
 		xP = ((count+1) % 2) * 0.2f;
 		yP -= (count % 2) * 0.01f;
 		count++;
@@ -480,22 +485,73 @@ void a3demoTestNetworking_Receive(a3_NetworkState*  demoState)
 			strcpy(myMessage.message, message);
 			demoState->peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, true);
 
-				
-			
-
 		}
 		break;
 		case TIC_TAC_TOE_MESSAGE:
 		{
+			TicTacToeMessage* incommingMessage = (TicTacToeMessage*)packet->data;
+			int x, y;
+			x = incommingMessage->xPos;
+			y = incommingMessage->yPos;
 
+			bool isOtherPlayerO = incommingMessage->isO;
+
+			TicTacToeMessage newMessage;
+			newMessage = *incommingMessage;
+
+			if (!demoState->isClient)
+			{
+				demoState->peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage),
+					HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->peer->GetMyBoundAddress(), true);
+			}
+			
+			if (isOtherPlayerO)
+			{
+				demoState->button[x][y].SetTexture(demoState->demoState->tex_skybox_clouds);
+				gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_o, x, y);
+			}
+			else
+			{
+				demoState->button[x][y].SetTexture(demoState->demoState->tex_mars_dm);
+				gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_x, x, y);
+			}
+
+			if (!demoState->isSpectator && !demoState->isMyTurn)
+			{
+				demoState->a3GameState = a3_NetworkState::GameState::CHALLENGER_YOUR_TURN;
+				demoState->isMyTurn = true;
+			}
+			else if (!demoState->isSpectator && demoState->isMyTurn)
+			{
+				demoState->a3GameState = a3_NetworkState::GameState::CHALLENGER_TURN;
+				demoState->isMyTurn = false;
+			}
+			
+		}
+		break;
+		case SET_GAME_STATE:
+		{
+			JoinedGameMessage* incommingMessage = (JoinedGameMessage*)packet->data;
+			demoState->a3GameState = incommingMessage->state;
+			demoState->isPlayerO = incommingMessage->isPlayerO;
+			demoState->isMyTurn = incommingMessage->isMyTurn;
+			if (demoState->a3GameState == a3_NetworkState::SPECTATOR)
+			{
+				demoState->isSpectator = true;
+			}
+			else
+			{
+				demoState->isSpectator = false;
+			}
 		}
 		break;
 		case JOIN_GAME:
 		{
 			JoinGameRequestMessage* incommingMessage = (JoinGameRequestMessage*)packet->data;
-			PlayerData newPlayer;
-			newPlayer.address = packet->systemAddress;			
-			strcpy(newPlayer.username, incommingMessage->username);
+			PlayerData* newPlayer = new PlayerData();
+			newPlayer->address = packet->systemAddress;			
+			newPlayer->isSelected = false;
+			strcpy(newPlayer->username, incommingMessage->username);
 			demoState->playersRequestingPlay.push_back(newPlayer);
 		}
 		break;
@@ -618,10 +674,11 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 					demoState->ticTacToe = false;
 				}
 				demoState->a3GameState = a3_NetworkState::SELECT_PLAYERS;
-				PlayerData youData;
-				strcpy(youData.username, "Server");
-				youData.address = demoState->peer->GetMyBoundAddress();
-				
+				PlayerData* youData = new PlayerData();
+				strcpy(youData->username, "Server");
+				youData->address = demoState->peer->GetMyBoundAddress();
+				demoState->connectedAddres = demoState->peer->GetMyBoundAddress();
+				youData->isSelected = false;
 				demoState->playersRequestingPlay.push_back(youData);
 			}
 			break;
@@ -720,20 +777,23 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 	//do Input
 	if (a3mouseIsPressed(demoState->demoState->mouse, a3mouse_left) && !a3mouseIsHeld(demoState->demoState->mouse, a3mouse_left))
 	{
+		bool eraseList = false;
 		if (demoState->a3GameState == a3_NetworkState::GameState::SELECT_PLAYERS)
 		{
 			int count = 0;
 
-			for(PlayerData pd : demoState->playersRequestingPlay)
+			for(PlayerData* pd : demoState->playersRequestingPlay)
 			{
+				if (pd->isSelected)
+					continue;
 				if (demoState->selectUserButtons[count].ButtonClickCheck(demoState->demoState->mouse->x,
 					(a3i32)((a3real)demoState->demoState->windowHeight * (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight)))))
 				{
 					int index = demoState->currentPlayerIndex;
-					printf("%s", pd.username);
+					printf("%s", pd->username);
 					
-					pd.isSelected = true;
-					demoState->players[index] = pd;
+					pd->isSelected = true;
+					demoState->players[index] = *pd;
 					demoState->currentPlayerIndex++;
 					if (demoState->currentPlayerIndex > 1)
 					{
@@ -741,9 +801,14 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 						JoinedGameMessage playerOneMessage;
 						playerOneMessage.messageId = GameMessages::SET_GAME_STATE;
 						playerOneMessage.state = a3_NetworkState::GameState::CHALLENGER_TURN;
+						playerOneMessage.isPlayerO = true;
+						playerOneMessage.isMyTurn = false;
 						JoinedGameMessage playerTwoMessage;
 						playerTwoMessage.messageId = GameMessages::SET_GAME_STATE;
 						playerTwoMessage.state = a3_NetworkState::GameState::CHALLENGER_YOUR_TURN;
+						playerTwoMessage.isPlayerO = false;
+						playerTwoMessage.isMyTurn = true;
+
 						
 						demoState->peer->Send(reinterpret_cast<char*>(&playerOneMessage), sizeof(playerOneMessage),
 							HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->players[0].address, false);
@@ -754,17 +819,29 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 						JoinedGameMessage spectatorMessage;
 						spectatorMessage.messageId = GameMessages::SET_GAME_STATE;
 						spectatorMessage.state = a3_NetworkState::GameState::SPECTATOR;
-						while (!demoState->playersRequestingPlay.empty())
+						spectatorMessage.isPlayerO = false;
+
+						for (PlayerData* p : demoState->playersRequestingPlay)
 						{
-							if (!demoState->playersRequestingPlay.front().isSelected)							
+							if (!p->isSelected)
+							{
 								demoState->peer->Send(reinterpret_cast<char*>(&spectatorMessage), sizeof(spectatorMessage),
-									HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->playersRequestingPlay.front().address, false);
-							
-								demoState->playersRequestingPlay.erase(demoState->playersRequestingPlay.begin());
+									HIGH_PRIORITY, RELIABLE_ORDERED, 0, p->address, false);
+
+								printf("%s", p->username);
+							}
 						}
+
+						eraseList = true;
+								break;
 					}
 				}
 				count++;
+			}
+			if (eraseList)
+			{
+
+				demoState->playersRequestingPlay.clear();
 			}
 		}
 
@@ -776,36 +853,45 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 		{
 			printf("Pressed!!!");
 		}*/
-		for (int i = 0; i < 3; i++)
+		if (demoState->a3GameState == a3_NetworkState::GameState::CHALLENGER_YOUR_TURN && demoState->isMyTurn)
 		{
-			for (int j = 0; j < 3; j++)
+			for (int i = 0; i < 3; i++)
 			{
-				//demoState->button->Init(demoState->demoState->tex_earth_dm, 300, 300, 100, 100);
-				if (demoState->button[i][j].ButtonClickCheck(demoState->demoState->mouse->x,
-					(a3i32)((a3real)demoState->demoState->windowHeight * (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight)))))
+				for (int j = 0; j < 3; j++)
 				{
-					if (gs_tictactoe_getSpaceState(demoState->ticTacToe_instance, i, j) == gs_tictactoe_space_state::gs_tictactoe_space_open)
+					//demoState->button->Init(demoState->demoState->tex_earth_dm, 300, 300, 100, 100);
+					if (demoState->button[i][j].ButtonClickCheck(demoState->demoState->mouse->x,
+						(a3i32)((a3real)demoState->demoState->windowHeight * (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight)))))
 					{
-						gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_x, i, j);
-						if (gs_tictactoe_getSpaceState(demoState->ticTacToe_instance, i, j) == gs_tictactoe_space_state::gs_tictactoe_space_x)
+						if (gs_tictactoe_getSpaceState(demoState->ticTacToe_instance, i, j) == gs_tictactoe_space_state::gs_tictactoe_space_open)
 						{
-							demoState->button[i][j].SetTexture(demoState->demoState->tex_skybox_clouds);
+							TicTacToeMessage myMessage;
+							myMessage.isO = demoState->isPlayerO;
+							myMessage.xPos = i;
+							myMessage.yPos = j;
+							myMessage.messageId = TIC_TAC_TOE_MESSAGE;
+							if (demoState->isPlayerO)
+							{
+								demoState->button[i][j].SetTexture(demoState->demoState->tex_skybox_clouds);
+								gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_o, i, j);
+							}
+							else
+							{
+								demoState->button[i][j].SetTexture(demoState->demoState->tex_mars_dm);
+								gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_x, i, j);
+							}
 
-							UserMessage myMessage;
-
-							std::string gameMove = "GAMEMOVE" + std::to_string(i) + std::to_string(j) + "X";
-							strcpy(myMessage.message, gameMove.c_str());
-
-							myMessage.messageId = ID_GAME_MESSAGE_1;
-							strcpy(myMessage.username, demoState->username);
 							demoState->peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage),
-								HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->connectedAddres, !demoState->isClient);
+								HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->connectedAddres, false);
+
+							demoState->a3GameState = a3_NetworkState::GameState::CHALLENGER_TURN;
 						}
+
 					}
-					
 				}
 			}
 		}
+		
 
 		if (demoState->chatButton->ButtonClickCheck(demoState->demoState->mouse->x,
 			(a3i32)((a3real)demoState->demoState->windowHeight * (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight)))))
