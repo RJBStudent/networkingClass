@@ -49,7 +49,8 @@ enum GameMessages
 	ID_GAME_MESSAGE_1 = ID_USER_PACKET_ENUM + 1,
 	ID_CLIENT_GREETING,
 	TIC_TAC_TOE_MESSAGE,
-	JOIN_GAME
+	JOIN_GAME,
+	SET_GAME_STATE
 
 };
 
@@ -84,6 +85,7 @@ struct PlayerData
 {
 	RakNet::SystemAddress address;
 	char username[512];
+	bool isSelected;
 };
 
 const int MAX_CLIENTS = 12;
@@ -151,6 +153,16 @@ struct a3_NetworkState
 	char board[500];
 	
 };
+
+
+
+#pragma pack(push, 1)
+struct JoinedGameMessage
+{
+	int messageId = 0;
+	a3_NetworkState::GameState state;
+};
+#pragma pack(pop)
 
 
 #include <stdio.h>
@@ -238,7 +250,6 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 		for (PlayerData pd : demoState->playersRequestingPlay)
 		//while(count < MAX_CLIENTS)
 		{
-			printf("%i", count);
 			demoState->selectUserButtons[count].Render(demoState->demoState, currentDemoProgram, projMat);
 				count++;
 		}
@@ -291,14 +302,14 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	{
 		a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "Select Players:  %s", demoState->textInput);
 
-		a3real xP = 0.4f;
+		a3real xP = 0.2f;
 		int count = 0;
-		a3real yP = 0.7f;
+		a3real yP = -0.8f;
 		for (PlayerData pd : demoState->playersRequestingPlay)
 		{
-		a3textDraw(demoState->demoState->text, xP, yP, -1, 0, 0, 0, 1, "%s", pd.username);
-		xP += (count % 2) * 90;
-		yP += (count % 2) * 60;
+		a3textDraw(demoState->demoState->text, xP, yP, -1, 1, 0, 0, 1, "%s", pd.username);
+		xP = ((count+1) % 2) * 0.2f;
+		yP -= (count % 2) * 0.01f;
 		count++;
 		}
 	}
@@ -306,7 +317,7 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	case a3_NetworkState::GameState::CHALLENGER_TURN:
 	{
 		//Render Challenger OPtions
-		//a3textDraw(demoState->text, -1, -1, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, -1, -1, -1, 1, 1, 1, 1, "Wait Your turn");
 		if (demoState->ticTacToe)
 		{
 			a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "%s   %s", demoState->board, demoState->textInput);
@@ -318,7 +329,7 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 	case a3_NetworkState::GameState::CHALLENGER_YOUR_TURN:
 	{
 		//Render Challenger OPtions
-		//a3textDraw(demoState->text, -1, -1, -1, 1, 1, 1, 1, "Enter Max Clients:  %s", demoState->textInput);
+		a3textDraw(demoState->demoState->text, -1, -1, -1, 1, 1, 1, 1, "Your Turn!");
 		if (demoState->ticTacToe)
 		{
 			a3textDraw(demoState->demoState->text, -1, 0, -1, 1, 1, 1, 1, "%s   %s", demoState->board, demoState->textInput);
@@ -607,6 +618,11 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 					demoState->ticTacToe = false;
 				}
 				demoState->a3GameState = a3_NetworkState::SELECT_PLAYERS;
+				PlayerData youData;
+				strcpy(youData.username, "Server");
+				youData.address = demoState->peer->GetMyBoundAddress();
+				
+				demoState->playersRequestingPlay.push_back(youData);
 			}
 			break;
 			case a3_NetworkState::GameState::SELECT_PLAYERS:
@@ -627,7 +643,6 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 					strcpy(myMessage.username, demoState->username);
 					demoState->peer->Send(reinterpret_cast<char*>(&myMessage), sizeof(myMessage), 
 						HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->connectedAddres,false);
-
 
 				}
 
@@ -703,18 +718,51 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 	}
 
 	//do Input
-	if (a3mouseIsPressed(demoState->demoState->mouse, a3mouse_left) )
+	if (a3mouseIsPressed(demoState->demoState->mouse, a3mouse_left) && !a3mouseIsHeld(demoState->demoState->mouse, a3mouse_left))
 	{
 		if (demoState->a3GameState == a3_NetworkState::GameState::SELECT_PLAYERS)
 		{
 			int count = 0;
-			for (PlayerData pd : demoState->playersRequestingPlay)
+
+			for(PlayerData pd : demoState->playersRequestingPlay)
 			{
 				if (demoState->selectUserButtons[count].ButtonClickCheck(demoState->demoState->mouse->x,
 					(a3i32)((a3real)demoState->demoState->windowHeight * (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight)))))
 				{
-					demoState->players[demoState->currentPlayerIndex] = pd;
+					int index = demoState->currentPlayerIndex;
+					printf("%s", pd.username);
+					
+					pd.isSelected = true;
+					demoState->players[index] = pd;
 					demoState->currentPlayerIndex++;
+					if (demoState->currentPlayerIndex > 1)
+					{
+						demoState->a3GameState = a3_NetworkState::GameState::WAITING_TO_JOIN_GAME;
+						JoinedGameMessage playerOneMessage;
+						playerOneMessage.messageId = GameMessages::SET_GAME_STATE;
+						playerOneMessage.state = a3_NetworkState::GameState::CHALLENGER_TURN;
+						JoinedGameMessage playerTwoMessage;
+						playerTwoMessage.messageId = GameMessages::SET_GAME_STATE;
+						playerTwoMessage.state = a3_NetworkState::GameState::CHALLENGER_YOUR_TURN;
+						
+						demoState->peer->Send(reinterpret_cast<char*>(&playerOneMessage), sizeof(playerOneMessage),
+							HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->players[0].address, false);
+						demoState->peer->Send(reinterpret_cast<char*>(&playerTwoMessage), sizeof(playerTwoMessage),
+							HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->players[1].address, false);
+
+
+						JoinedGameMessage spectatorMessage;
+						spectatorMessage.messageId = GameMessages::SET_GAME_STATE;
+						spectatorMessage.state = a3_NetworkState::GameState::SPECTATOR;
+						while (!demoState->playersRequestingPlay.empty())
+						{
+							if (!demoState->playersRequestingPlay.front().isSelected)							
+								demoState->peer->Send(reinterpret_cast<char*>(&spectatorMessage), sizeof(spectatorMessage),
+									HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->playersRequestingPlay.front().address, false);
+							
+								demoState->playersRequestingPlay.erase(demoState->playersRequestingPlay.begin());
+						}
+					}
 				}
 				count++;
 			}
@@ -932,6 +980,9 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 		}
 		
 	}
+	PlayerData mew;
+	demoState->players[0] = mew;
+
 
 	// return persistent state pointer
 
