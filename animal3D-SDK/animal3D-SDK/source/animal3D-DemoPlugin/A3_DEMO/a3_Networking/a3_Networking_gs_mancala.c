@@ -66,14 +66,14 @@ typedef		gs_mancala_space_state			gs_mancala[GS_MANCALA_PLAYERS][GS_MANCALA_BOAR
 #define GS_MANCALA_VALID(p,s)					GS_VALIDATE_COORDINATE(p,s,GS_MANCALA_PLAYERS,GS_MANCALA_BOARD_HEIGHT)
 
 
-inline gs_mancala_space_state gs_tictactoe_getSpaceState(gs_mancala const game, gs_mancala_index const player, gs_mancala_index const space)
+inline gs_mancala_space_state gs_mancala_getSpaceState(gs_mancala const game, gs_mancala_index const player, gs_mancala_index const space)
 {
 	if (GS_MANCALA_VALID(player, space))
 		return (game[player][space]);
 	return gs_mancala_space_invalid;
 }
 
-inline gs_mancala_space_state gs_tictactoe_setSpaceState(gs_mancala game, gs_mancala_space_state const state, gs_mancala_index const player, gs_mancala_index const space)
+inline gs_mancala_space_state gs_mancala_setSpaceState(gs_mancala game, gs_mancala_space_state const state, gs_mancala_index const player, gs_mancala_index const space)
 {
 	if (GS_MANCALA_VALID(player, space))
 		return (game[player][space] = state);
@@ -102,9 +102,8 @@ inline gs_mancala_index gs_mancala_reset(gs_mancala game)
 extern		gs_mancala_space_state const	gs_mancala_space_invalid = -1;
 
 
-int launchMancala()
+int launchMancala(gs_mancala game)
 {
-	gs_mancala game = { 0 };
 
 	gs_mancala_reset(game);
 

@@ -50,7 +50,8 @@ enum GameMessages
 	ID_CLIENT_GREETING,
 	TIC_TAC_TOE_MESSAGE,
 	JOIN_GAME,
-	SET_GAME_STATE
+	SET_GAME_STATE,
+	RESET_GAME
 
 };
 
@@ -146,6 +147,7 @@ struct a3_NetworkState
 
 	ButtonObject chatButton[1];
 	ButtonObject selectUserButtons[MAX_CLIENTS];
+	ButtonObject restartButton[1];
 	std::vector<UserMessage> messageList;
 
 	bool ticTacToe;
@@ -247,6 +249,10 @@ void a3demoTestRender(a3_NetworkState const* demoState)
 		}
 
 		demoState->chatButton->Render(demoState->demoState, currentDemoProgram, projMat);
+		if(!demoState->isClient)
+		{ 
+		demoState->restartButton->Render(demoState->demoState, currentDemoProgram, projMat);
+		}
 	}
 
 	if (demoState->a3GameState == a3_NetworkState::GameState::SELECT_PLAYERS)
@@ -469,7 +475,7 @@ void a3demoTestNetworking_Receive(a3_NetworkState*  demoState)
 		break;
 		case ID_CLIENT_GREETING:
 		{
-			UserMessage* incommingMessage = (UserMessage*)packet->data;			
+			UserMessage* incommingMessage = (UserMessage*)packet->data;
 						
 			printf("Sending Respone to user.. %s", incommingMessage->username);
 			UserMessage myMessage;
@@ -535,6 +541,8 @@ void a3demoTestNetworking_Receive(a3_NetworkState*  demoState)
 			demoState->a3GameState = incommingMessage->state;
 			demoState->isPlayerO = incommingMessage->isPlayerO;
 			demoState->isMyTurn = incommingMessage->isMyTurn;
+			
+			
 			if (demoState->a3GameState == a3_NetworkState::SPECTATOR)
 			{
 				demoState->isSpectator = true;
@@ -553,6 +561,20 @@ void a3demoTestNetworking_Receive(a3_NetworkState*  demoState)
 			newPlayer->isSelected = false;
 			strcpy(newPlayer->username, incommingMessage->username);
 			demoState->playersRequestingPlay.push_back(newPlayer);
+		}
+		break;
+		case RESET_GAME:
+		{
+			gs_tictactoe_reset(demoState->ticTacToe_instance);
+
+			for (int i = 0; i < 3; i++)
+			{
+				for (int j = 0; j < 3; j++)
+				{
+					gs_tictactoe_space_state spaceState = gs_tictactoe_getSpaceState(demoState->ticTacToe_instance, i, j);
+					demoState->button[i][j].SetTexture(demoState->demoState->tex_earth_dm);
+				}
+			}
 		}
 		break;
 		default:
@@ -667,7 +689,8 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 				if (input[0] == 't' || input[0] == 'T')
 				{
 					demoState->ticTacToe = true;
-					launchTicTacToe(demoState->ticTacToe_instance);
+					
+					
 				}
 				else
 				{
@@ -679,6 +702,7 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 				youData->address = demoState->peer->GetMyBoundAddress();
 				demoState->connectedAddres = demoState->peer->GetMyBoundAddress();
 				youData->isSelected = false;
+				demoState->playersRequestingPlay.clear();
 				demoState->playersRequestingPlay.push_back(youData);
 			}
 			break;
@@ -724,47 +748,7 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 			break;
 			case a3_NetworkState::GameState::CHALLENGER_YOUR_TURN:
 			{
-				if (demoState->ticTacToe)
-				{
-					bool madeMove = false;
-					if (input[0] == 'O' || input[0] == 'o')
-					{
-						gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_o, (int)input[1], (int)input[2]);
-						madeMove = true;
-						printf("O move\n");
-					}
-					else if (input[0] == 'X' || input[0] == 'x')
-					{
-						gs_tictactoe_setSpaceState(demoState->ticTacToe_instance, gs_tictactoe_space_state::gs_tictactoe_space_x, (int)input[1], (int)input[2]);
-						madeMove = true;
-						printf("X move\n");
-					}
-					if (madeMove)
-					{
-						std::fill(board, board + 500, '.');
-						int boardIndex = 0;
-						for (int i = 0; i < 3; i++)
-						{
-							for (int j = 0; j < 3; j++)
-							{
-								gs_tictactoe_space_state spaceState = gs_tictactoe_getSpaceState(demoState->ticTacToe_instance, i, j);
-								if (spaceState == gs_tictactoe_space_state::gs_tictactoe_space_open) {
-									board[boardIndex] = '*';
-								}
-								else if (spaceState == gs_tictactoe_space_state::gs_tictactoe_space_o) {
-									board[boardIndex] = 'O';
-								}
-								else if (spaceState == gs_tictactoe_space_state::gs_tictactoe_space_x) {
-									board[boardIndex] = 'X';
-								}
-								boardIndex++;
-							}
-							board[boardIndex] = '|';
-							boardIndex++;
-						}
-					}
-					
-				}
+				
 			}
 			break;
 			default:
@@ -827,9 +811,8 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 							{
 								demoState->peer->Send(reinterpret_cast<char*>(&spectatorMessage), sizeof(spectatorMessage),
 									HIGH_PRIORITY, RELIABLE_ORDERED, 0, p->address, false);
-
-								printf("%s", p->username);
 							}
+								delete p;
 						}
 
 						eraseList = true;
@@ -839,8 +822,7 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 				count++;
 			}
 			if (eraseList)
-			{
-
+			{				
 				demoState->playersRequestingPlay.clear();
 			}
 		}
@@ -891,7 +873,30 @@ void a3demoTestInput(a3_NetworkState* demoState, char(&input)[500], int& index, 
 				}
 			}
 		}
-		
+		if (!demoState->isClient)
+		{
+
+			if (demoState->restartButton->ButtonClickCheck(demoState->demoState->mouse->x,
+			(a3i32)((a3real)demoState->demoState->windowHeight * (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight)))))
+			{			
+				
+				gs_tictactoe_reset(demoState->ticTacToe_instance);
+
+				for (int i = 0; i < 3; i++)
+				{
+					for (int j = 0; j < 3; j++)
+					{
+						gs_tictactoe_space_state spaceState = gs_tictactoe_getSpaceState(demoState->ticTacToe_instance, i, j);
+						demoState->button[i][j].SetTexture(demoState->demoState->tex_earth_dm);
+					}
+				}
+
+				UserMessage newMessage;
+				newMessage.messageId = GameMessages::RESET_GAME;
+				demoState->peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage),
+					HIGH_PRIORITY, RELIABLE_ORDERED, 0, demoState->connectedAddres, true);
+			}
+		}
 
 		if (demoState->chatButton->ButtonClickCheck(demoState->demoState->mouse->x,
 			(a3i32)((a3real)demoState->demoState->windowHeight * (1.0 - ((a3real)demoState->demoState->mouse->y / (a3real)demoState->demoState->windowHeight)))))
@@ -1054,6 +1059,7 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 			}
 		}
 		demoState->chatButton->Init(demoState->demoState->tex_checker, 700, 500, 50, 25);
+		demoState->restartButton->Init(demoState->demoState->tex_checker, 900, 500, 50, 25);
 		
 		int i = 0;
 		
@@ -1065,9 +1071,8 @@ A3DYLIBSYMBOL a3_NetworkState* a3demoCB_load(a3_NetworkState* demoState, a3boole
 				a3real(600 + (j%2) * 90), a3real(10 + i), 40, 25);
 		}
 		
+		launchTicTacToe(demoState->ticTacToe_instance);
 	}
-	PlayerData mew;
-	demoState->players[0] = mew;
 
 
 	// return persistent state pointer
