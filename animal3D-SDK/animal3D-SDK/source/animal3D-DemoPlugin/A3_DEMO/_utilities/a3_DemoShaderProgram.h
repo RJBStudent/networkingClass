@@ -48,8 +48,8 @@ extern "C"
 	// maximum number of uniforms in a program
 	enum a3_DemoShaderProgramMaxCounts
 	{
-		demoStateMaxCount_shaderProgramUniform = 4,
-		demoStateMaxCount_shaderProgramUniformBlock = 1,
+		demoStateMaxCount_shaderProgramUniform = 32,
+		demoStateMaxCount_shaderProgramUniformBlock = 2,
 	};
 
 
@@ -75,16 +75,31 @@ extern "C"
 			a3i32 uniformLocation[demoStateMaxCount_shaderProgramUniform];
 			struct {
 				a3i32
-					// common vertex shader uniforms
+					// common vertex shader uniform handles
 					uMVP,						// model-view-projection transform (object -> clip)
+					uMV,						// model-view matrix (object -> view)
+					uP,							// projection matrix (view -> clip)
+					uP_inv,						// projection matrix inverse (clip -> view)
+					uMV_nrm,					// model-view matrix for normals (object -> view)
 					uAtlas;						// atlas matrix for texture coordinates
 					
 				a3i32
-					// common fragment shader uniforms
-					uColor;						// uniform color
+					// common fragment shader uniform handles
+					uLightCt,					// light count
+					uLightSz,					// light size
+					uLightSzInvSq,				// light size inverse squared
+					uLightPos,					// light position (in whatever space makes sense)
+					uLightCol,					// light color
+					uColor;						// uniform color (used in whatever context is needed)
 
 				a3i32
-					// common general uniforms
+					// common texture handles
+					uTex_dm, uTex_sm,
+					uTex_dm_ramp, uTex_sm_ramp,
+					uImage0;
+
+				a3i32
+					// common general uniform handles
 					uTime;						// time
 			};
 		};
@@ -93,9 +108,13 @@ extern "C"
 		union {
 			a3i32 uniformBlockLocation[demoStateMaxCount_shaderProgramUniformBlock];
 			struct {
-				// transformation uniform blocks
 				a3i32
-					ubTransformMVP;		// model-view-projection
+					// transformation uniform block handles
+					ubTransformMVP;		// model-view-projection matrix block
+
+				a3i32
+					// lighting uniform block handles
+					ubPointLight;		// point light structure block
 			};
 		};
 	};

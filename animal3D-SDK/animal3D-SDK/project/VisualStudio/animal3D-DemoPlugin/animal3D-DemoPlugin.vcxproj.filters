@@ -122,6 +122,12 @@
     <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\_utilities\a3_DemoShaderProgram.h">
       <Filter>Header Files\A3_DEMO\_utilities</Filter>
     </ClInclude>
+    <ClInclude Include="_src_win\ButtonObject.h">
+      <Filter>Source Files\common\A3_DEMO\a3_DemoState</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\ButtonObject.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\resource\glsl\4x\fs\drawColorAttrib_fs4x.glsl">
@@ -145,5 +151,17 @@
     <None Include="..\..\..\resource\glsl\4x\vs\passthru_vs4x.glsl">
       <Filter>Resource Files\A3_DEMO\glsl\4x\vs</Filter>
     </None>
+    <None Include="..\..\..\resource\glsl\4x\fs\02-shading\drawLambert_multi_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs\02-shading\drawNonphoto_multi_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs\02-shading\drawPhong_multi_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs\02-shading\drawTexture_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs\03-framebuffer\drawLambert_multi_mrt_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs\03-framebuffer\drawNonphoto_multi_mrt_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs\03-framebuffer\drawPhong_multi_mrt_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs\03-framebuffer\drawTexture_colorManip_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs\03-framebuffer\drawTexture_coordManip_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\fs\03-framebuffer\drawTexture_mrt_fs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\vs\02-shading\passLightingData_transform_vs4x.glsl" />
+    <None Include="..\..\..\resource\glsl\4x\vs\02-shading\passTexcoord_transform_vs4x.glsl" />
   </ItemGroup>
 </Project>

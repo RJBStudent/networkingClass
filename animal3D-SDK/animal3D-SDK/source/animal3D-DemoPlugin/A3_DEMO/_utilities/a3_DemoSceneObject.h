@@ -37,7 +37,7 @@ extern "C"
 {
 #else	// !__cplusplus
 	typedef struct a3_DemoSceneObject	a3_DemoSceneObject;
-	typedef struct a3_DemoCamera		a3_DemoCamera;
+	typedef struct a3_DemoProjector		a3_DemoProjector;
 	typedef struct a3_DemoPointLight	a3_DemoPointLight;
 #endif	// __cplusplus
 
@@ -56,8 +56,8 @@ extern "C"
 		a3i32 scaleMode;		// 0 = off; 1 = uniform; other = non-uniform (nightmare)
 	};
 
-	// camera/viewer
-	struct a3_DemoCamera
+	// projector/camera/viewer
+	struct a3_DemoProjector
 	{
 		a3_DemoSceneObject *sceneObject;	// pointer to scene object
 		a3mat4 projectionMat;				// projection matrix
@@ -92,10 +92,10 @@ extern "C"
 	inline a3i32 a3demo_rotateSceneObject(a3_DemoSceneObject *sceneObject, const a3real speed, const a3real deltaX, const a3real deltaY, const a3real deltaZ);
 	inline a3i32 a3demo_moveSceneObject(a3_DemoSceneObject *sceneObject, const a3real speed, const a3real deltaX, const a3real deltaY, const a3real deltaZ);
 
-	inline void a3demo_setCameraSceneObject(a3_DemoCamera *camera, a3_DemoSceneObject *sceneObject);
-	inline void a3demo_initCamera(a3_DemoCamera *camera);
-	inline void a3demo_updateCameraProjection(a3_DemoCamera *camera);
-	inline void a3demo_updateCameraViewProjection(a3_DemoCamera *camera);
+	inline void a3demo_setProjectorSceneObject(a3_DemoProjector *projector, a3_DemoSceneObject *sceneObject);
+	inline void a3demo_initProjector(a3_DemoProjector *projector);
+	inline void a3demo_updateProjectorProjectionMat(a3_DemoProjector *projector);
+	inline void a3demo_updateProjectorViewProjectionMat(a3_DemoProjector *projector);
 
 
 //-----------------------------------------------------------------------------

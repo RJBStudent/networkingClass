@@ -79,39 +79,39 @@ extern inline a3i32 a3demo_moveSceneObject(a3_DemoSceneObject *sceneObject, cons
 }
 
 
-extern inline void a3demo_setCameraSceneObject(a3_DemoCamera *camera, a3_DemoSceneObject *sceneObject)
+extern inline void a3demo_setProjectorSceneObject(a3_DemoProjector *projector, a3_DemoSceneObject *sceneObject)
 {
-	camera->sceneObject = sceneObject;
+	projector->sceneObject = sceneObject;
 }
 
-extern inline void a3demo_initCamera(a3_DemoCamera *camera)
+extern inline void a3demo_initProjector(a3_DemoProjector *projector)
 {
-	a3real4x4SetIdentity(camera->projectionMat.m);
-	a3real4x4SetIdentity(camera->projectionMatInv.m);
-	a3real4x4SetReal4x4(camera->viewProjectionMat.m, camera->sceneObject->modelMatInv.m);
-	camera->perspective = a3false;
-	camera->fovy = a3real_two;
-	camera->aspect = a3real_one;
-	camera->znear = -a3real_one;
-	camera->zfar = +a3real_one;
-	camera->ctrlMoveSpeed = a3real_zero;
-	camera->ctrlRotateSpeed = a3real_zero;
-	camera->ctrlZoomSpeed = a3real_zero;
+	a3real4x4SetIdentity(projector->projectionMat.m);
+	a3real4x4SetIdentity(projector->projectionMatInv.m);
+	a3real4x4SetReal4x4(projector->viewProjectionMat.m, projector->sceneObject->modelMatInv.m);
+	projector->perspective = a3false;
+	projector->fovy = a3real_two;
+	projector->aspect = a3real_one;
+	projector->znear = -a3real_one;
+	projector->zfar = +a3real_one;
+	projector->ctrlMoveSpeed = a3real_zero;
+	projector->ctrlRotateSpeed = a3real_zero;
+	projector->ctrlZoomSpeed = a3real_zero;
 }
 
-extern inline void a3demo_updateCameraProjection(a3_DemoCamera *camera)
+extern inline void a3demo_updateProjectorProjectionMat(a3_DemoProjector *projector)
 {
-	if (camera->perspective)
-		a3real4x4MakePerspectiveProjection(camera->projectionMat.m, camera->projectionMatInv.m,
-			camera->fovy, camera->aspect, camera->znear, camera->zfar);
+	if (projector->perspective)
+		a3real4x4MakePerspectiveProjection(projector->projectionMat.m, projector->projectionMatInv.m,
+			projector->fovy, projector->aspect, projector->znear, projector->zfar);
 	else
-		a3real4x4MakeOrthographicProjection(camera->projectionMat.m, camera->projectionMatInv.m,
-			camera->fovy * camera->aspect, camera->fovy, camera->znear, camera->zfar);
+		a3real4x4MakeOrthographicProjection(projector->projectionMat.m, projector->projectionMatInv.m,
+			projector->fovy * projector->aspect, projector->fovy, projector->znear, projector->zfar);
 }
 
-extern inline void a3demo_updateCameraViewProjection(a3_DemoCamera *camera)
+extern inline void a3demo_updateProjectorViewProjectionMat(a3_DemoProjector *projector)
 {
-	a3real4x4Product(camera->viewProjectionMat.m, camera->projectionMat.m, camera->sceneObject->modelMatInv.m);
+	a3real4x4Product(projector->viewProjectionMat.m, projector->projectionMat.m, projector->sceneObject->modelMatInv.m);
 }
 
 
