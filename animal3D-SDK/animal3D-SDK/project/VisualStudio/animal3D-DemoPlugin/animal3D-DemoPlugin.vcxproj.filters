@@ -58,6 +58,9 @@
     <Filter Include="Source Files\common\A3_DEMO\a3_DemoState">
       <UniqueIdentifier>{099be26f-4fce-44e2-ab33-a6aa6cb8589e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\common\A3_DEMO\a3_Networking">
+      <UniqueIdentifier>{7cd1e83b-1cfa-4949-86a4-d5e0bf1c265a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="_src_win\main_dll.c">
@@ -89,6 +92,18 @@
     </ClCompile>
     <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_demo_callbacks.cpp">
       <Filter>Source Files\common\A3_DEMO</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_Networking\a3_Networking_gs_checkers.c">
+      <Filter>Source Files\common\A3_DEMO\a3_Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_Networking\a3_Networking_gs_mancala.c">
+      <Filter>Source Files\common\A3_DEMO\a3_Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_Networking\a3_Networking_gs_tictactoe.c">
+      <Filter>Source Files\common\A3_DEMO\a3_Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_Networking\a3_Networking_gs_battleship.c">
+      <Filter>Source Files\common\A3_DEMO\a3_Networking</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
