@@ -44,6 +44,7 @@
 #include "_utilities/a3_DemoShaderProgram.h"
 
 #include "a3_NetworkingManager.h"
+#include "a3_ChatManager.h"
 
 
 //-----------------------------------------------------------------------------
@@ -97,7 +98,6 @@ extern "C"
 	{
 		//---------------------------------------------------------------------
 		// general variables pertinent to the state
-
 		// terminate key pressed
 		a3i32 exitFlag;
 
@@ -157,6 +157,10 @@ extern "C"
 		// networking
 		a3_NetworkingManager net[1];
 
+
+		// chat
+		a3_ChatManager chat[1];
+		
 
 		//---------------------------------------------------------------------
 		// object arrays: organized as anonymous unions for two reasons: 
@@ -291,6 +295,27 @@ extern "C"
 	void a3demo_setDefaultGraphicsState();
 	void a3demo_initScene(a3_DemoState *demoState);
 	void a3demo_initSceneRefresh(a3_DemoState *demoState);
+
+
+
+
+	/// <summary>
+	/// Add Input
+	/// </summary>
+	//a3i32 InputChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
+	/// <summary>
+	/// Update time left on messages
+	/// </summary>
+	//a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
+	/// <summary>
+	/// Render all messages in chat
+	/// </summary>
+	//a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
+	/// <summary>
+	/// Add message to list from networked list
+	/// </summary>
+	//a3i32 AddMessage(a3_ChatManager* chatManager, a3_NetChatMessage newMessage);
+
 
 
 //-----------------------------------------------------------------------------

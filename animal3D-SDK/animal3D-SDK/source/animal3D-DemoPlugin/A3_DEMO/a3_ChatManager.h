@@ -1,39 +1,19 @@
-#pragma once
+#ifndef __ANIMAL3D_CHATMANAGER_H
+#define __ANIMAL3D_CHATMANAGER_H
 
-#include "A3_DEMO/a3_DemoState.h"
 #include "animal3D/animal3D.h"
-#include <vector>
+//#include <vector>
+
+#ifdef __cplusplus
+extern "C"
+{
+#else	// !__cplusplus
+typedef struct a3_ChatManager				a3_ChatManager;
+#endif	// __cplusplus
+
 
 const unsigned int TEXT_ARRAY_SIZE = 500;
 
-
-struct a3_ChatManager
-{
-	char textInput[TEXT_ARRAY_SIZE];
-	unsigned int inputIndex;	
-	std::vector<a3_Message> MessageList;
-};
-
-/// <summary>
-/// Add Input
-/// </summary>
-a3i32 InputChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
-
-
-/// <summary>
-/// Update time left on messages
-/// </summary>
-a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
-
-/// <summary>
-/// Render all messages in chat
-/// </summary>
-a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
-
-/// <summary>
-/// Add message to list from networked list
-/// </summary>
-a3i32 AddMessage(a3_ChatManager* chatManager, a3_NetChatMessage newMessage);
 
 //Container of messages
 struct a3_Message
@@ -52,3 +32,18 @@ struct a3_NetChatMessage
 	char user[TEXT_ARRAY_SIZE];
 };
 #pragma pack (pop)
+
+
+struct a3_ChatManager
+{
+	//char textInput[TEXT_ARRAY_SIZE];
+	unsigned int inputIndex;	
+	//std::vector<a3_Message> MessageList;
+};
+
+
+#ifdef __cplusplus
+}
+#endif	// __cplusplus
+
+#endif // !A3_CHATMANAGER_H

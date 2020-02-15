@@ -1,5 +1,6 @@
 #include "A3_DEMO/a3_ChatManager.h"
-
+#include "a3_DemoState.h"
+/*
 a3i32 InputChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState)
 {
 	for (int i = 32; i < 127; i++)
@@ -30,6 +31,7 @@ a3i32 InputChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoStat
 	return 0;
 }
 
+
 a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState)
 {
 	if ((demoState->keyboard->key.key[10] && !demoState->keyboard->key0.key[10]) ||
@@ -37,10 +39,32 @@ a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoSta
 	{
 
 	}
+
+	for (std::vector<a3_Message>::iterator iter = chatManager->MessageList.begin();
+		iter != chatManager->MessageList.end();
+		++iter)
+	{
+		iter->messageLength -= demoState->renderTimer->secondsPerTick;
+		if (iter->messageLength <= 0.0f)
+		{
+			chatManager->MessageList.erase(iter);
+			continue;
+		}
+	}
 	return 0;
 }
 
 a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState)
 {
+
+	//a3textDraw(demoState->text, -1, 0, -1, 1, 1, 1, 1, "%s : %s",  , chatManager->textInput);
+
+	a3f32 startPos = -0.8f;
+	for (a3_Message message : chatManager->MessageList)
+	{
+		a3textDraw(demoState->text, startPos, 0, -1, 1, 1, 1, 1, "%s : %s", message.user, message.message);
+		startPos += 0.05f;
+	}
 	return 0;
 }
+*/
