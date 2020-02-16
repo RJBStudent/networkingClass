@@ -52,6 +52,12 @@ extern "C"
 		a3ui16 port_inbound, port_outbound;
 		a3ui16 maxConnect_inbound, maxConnect_outbound;
 		void* peer;
+
+		int isServer;
+
+		a3netAddressStr ip;
+
+		int connected;
 	};
 
 
