@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "GL/glew.h"
 
 
 //-----------------------------------------------------------------------------
@@ -51,13 +52,24 @@ void a3demo_startNetworking(a3_DemoState* demoState, a3boolean const isServer)
 	if (isServer)
 	{
 		if (a3netStartup(demoState->net, port_server, 0, maxConnections_server, 0) > 0)
+		{
+			demoState->net->isServer = 1;
 			printf("\n STARTED NETWORKING AS SERVER \n");
+				demoState->net->connected = 1;
+		}
 	}
 	else
 	{
 		if (a3netStartup(demoState->net, 0, port_server, 0, maxConnections_client) > 0)
-			if (a3netConnect(demoState->net, ipAddress) > 0)
+		{
+			if (a3netConnect(demoState->net, demoState->net->ip) > 0)
+			{
+				demoState->net->isServer = 0;
 				printf("\n STARTED NETWORKING AS CLIENT \n");
+				demoState->net->connected = 1;
+			}
+
+		}
 	}
 }
 
@@ -180,6 +192,7 @@ extern "C"
 	A3DYLIBSYMBOL void a3demoCB_mouseWheel(a3_DemoState *demoState, a3i32 delta, a3i32 cursorX, a3i32 cursorY);
 	A3DYLIBSYMBOL void a3demoCB_mouseMove(a3_DemoState *demoState, a3i32 cursorX, a3i32 cursorY);
 	A3DYLIBSYMBOL void a3demoCB_mouseLeave(a3_DemoState *demoState);
+	A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState *demoState);
 
 #ifdef __cplusplus
 }
@@ -255,6 +268,9 @@ A3DYLIBSYMBOL a3_DemoState *a3demoCB_load(a3_DemoState *demoState, a3boolean hot
 
 		// scene objects
 		a3demo_initScene(demoState);
+
+		//Chat manager
+		InitChatManager(demoState->chat);
 	}
 
 	// return persistent state pointer
@@ -318,11 +334,14 @@ A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState *demoState)
 		if (a3timerUpdate(demoState->renderTimer) > 0)
 		{
 			// render timer ticked, update demo state and draw
-			a3demo_input(demoState, demoState->renderTimer->secondsPerTick);
+			//a3demo_input(demoState, demoState->renderTimer->secondsPerTick);
+			InputChatManager(demoState->chat, demoState);
 			a3netProcessInbound(demoState->net);
-			a3demo_update(demoState, demoState->renderTimer->secondsPerTick);
+			UpdateChatManager(demoState->chat, demoState);
+			//a3demo_update(demoState, demoState->renderTimer->secondsPerTick);
 			a3netProcessOutbound(demoState->net);
-			a3demo_render(demoState);
+			RenderAllApplications(demoState);
+
 
 			// update input
 			a3mouseUpdate(demoState->mouse);
@@ -440,6 +459,15 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 	// persistent state update
 	a3keyboardSetStateASCII(demoState->keyboard, (a3byte)asciiKey);
 
+	if (demoState->chat->states == 1 || demoState->chat->states == 0)
+	{
+		return;
+	}
+
+
+
+	
+
 	// handle special cases immediately
 	switch (asciiKey)
 	{
@@ -464,8 +492,8 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 	case '2':
 		a3demo_startNetworking(demoState, 0);
 		break;
-
-
+	}
+	/*
 		// reload (T) or toggle (t) text
 	case 'T':
 		if (!a3textIsInitialized(demoState->text))
@@ -552,6 +580,7 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 			demoSubMode, demoOutput, demoSubModeCount, demoOutputCount);
 		break;
 	}
+	*/
 }
 
 // ASCII key is held
@@ -635,3 +664,31 @@ A3DYLIBSYMBOL void a3demoCB_mouseLeave(a3_DemoState *demoState)
 
 
 //-----------------------------------------------------------------------------
+
+A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState* demoState)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	RenderChatManager(demoState->chat, demoState);
+
+	if (demoState->chat->states == 0 || demoState->net->connected == 0)
+	{
+		a3textDraw(demoState->text, -1, -0.9f, -1, 1, 1, 1, 1, "AS SOON AS IP IS ENTERED PRESS 1 TO ENTER AS SERVER AND 2 TO ENTER AS CLIENT");
+	}
+	else
+	{
+		if (demoState->net->isServer == 1)
+		{
+
+		a3textDraw(demoState->text, 0, 0, -1, 1, 1, 1, 1, "THIS IS THE SERVER");
+		}
+
+	}
+
+	
+
+}
+
+
+
+
+

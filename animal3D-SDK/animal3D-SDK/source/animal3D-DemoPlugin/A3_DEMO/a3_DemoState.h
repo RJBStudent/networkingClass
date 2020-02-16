@@ -297,20 +297,22 @@ extern "C"
 	void a3demo_initSceneRefresh(a3_DemoState *demoState);
 
 
-
-
+	///<summary>
+	///Initialize Chat Manager
+	///</summary>
+	a3i32 InitChatManager(a3_ChatManager* chatManager);
 	/// <summary>
 	/// Add Input
 	/// </summary>
-	//a3i32 InputChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
+	a3i32 InputChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
 	/// <summary>
 	/// Update time left on messages
 	/// </summary>
-	//a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
+	a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* demoState);
 	/// <summary>
 	/// Render all messages in chat
 	/// </summary>
-	//a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
+	a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
 	/// <summary>
 	/// Add message to list from networked list
 	/// </summary>

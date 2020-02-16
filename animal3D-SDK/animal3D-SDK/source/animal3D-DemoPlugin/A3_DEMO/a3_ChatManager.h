@@ -2,25 +2,24 @@
 #define __ANIMAL3D_CHATMANAGER_H
 
 #include "animal3D/animal3D.h"
-//#include <vector>
 
 #ifdef __cplusplus
 extern "C"
 {
 #else	// !__cplusplus
 typedef struct a3_ChatManager				a3_ChatManager;
+typedef struct a3_Message					a3_Message;
 #endif	// __cplusplus
 
-
-const unsigned int TEXT_ARRAY_SIZE = 500;
-
-
-//Container of messages
+#define TEXT_ARRAY_SIZE 500
+#define MAX_MESSAGES_RECEIVED 50
+	//Container of messages
 struct a3_Message
 {
 	char message[TEXT_ARRAY_SIZE];
 	char user[TEXT_ARRAY_SIZE];
 	a3f64 messageLength;
+	int render;
 };
 
 //Used For Networking Messages
@@ -34,11 +33,22 @@ struct a3_NetChatMessage
 #pragma pack (pop)
 
 
+
 struct a3_ChatManager
 {
-	//char textInput[TEXT_ARRAY_SIZE];
+
+	a3_Message messageList[MAX_MESSAGES_RECEIVED];
+
+	char user[TEXT_ARRAY_SIZE];
+	char textInput[TEXT_ARRAY_SIZE];
 	unsigned int inputIndex;	
-	//std::vector<a3_Message> MessageList;
+
+	enum ChatStates
+	{
+		STARTUP = 0,
+		USERNAME_INPUT = 1,
+		IN_CHAT = 2
+	}states;
 };
 
 
