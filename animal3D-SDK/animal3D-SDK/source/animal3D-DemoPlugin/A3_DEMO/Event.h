@@ -1,7 +1,7 @@
 #pragma once
 
-//#include <string>
-//class GameObject;
+#include <string>
+class GameObject;
 
 class Event
 {
@@ -11,7 +11,7 @@ public:
 
 	virtual void Execute() = 0;
 };
-/*
+
 class MoveEvent : public Event
 {
 public:
@@ -29,14 +29,14 @@ private:
 class StringEvent : public Event
 {
 public:
-	//StringEvent(std::string newString, GameObject* target);
+	StringEvent(std::string newString, GameObject* target);
 	~StringEvent();
 
 	void Execute();
 
 private:
 	GameObject* owner;
-//	std::string myString;
+	std::string myString;
 };
 
 class BoolEvent : public Event
@@ -51,4 +51,3 @@ private:
 	GameObject* owner;
 	bool isRed;
 }; 
-*/

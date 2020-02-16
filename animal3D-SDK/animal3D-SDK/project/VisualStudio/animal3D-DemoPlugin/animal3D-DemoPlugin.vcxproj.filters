@@ -108,9 +108,6 @@
     <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_Networking\a3_NetworkingManager.cpp">
       <Filter>Source Files\common\A3_DEMO\a3_Networking</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_demo_callbacks.c">
-      <Filter>Source Files\common\A3_DEMO</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\Event.cpp">
       <Filter>Source Files\common\A3_DEMO</Filter>
     </ClCompile>
@@ -118,6 +115,9 @@
       <Filter>Source Files\common\A3_DEMO</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_ChatManager.cpp">
+      <Filter>Source Files\common\A3_DEMO</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_demo_callbacks.cpp">
       <Filter>Source Files\common\A3_DEMO</Filter>
     </ClCompile>
   </ItemGroup>
