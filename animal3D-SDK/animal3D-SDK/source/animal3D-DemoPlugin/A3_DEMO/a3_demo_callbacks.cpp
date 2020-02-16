@@ -32,6 +32,8 @@
 #include "a3_DemoState.h"
 #include "GameObject.h"
 #include "Event.h"
+#include "GameObject.h"
+#include "EventManager.h"
 
 
 #include <stdio.h>
@@ -40,6 +42,37 @@
 #include "GL/glew.h"
 
 
+struct Game {
+	EventManager eventManager[1];
+	GameObject gameObject[1];
+};
+
+Game myGame;
+
+#pragma pack(push, 1)
+struct MoveMessage
+{
+	int messageId = 0;
+	int x = 0;
+	int y = 0;
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct StringMessage
+{
+	int messageId = 0;
+	char newString[512];
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct RedMessage
+{
+	int messageId = 0;
+	bool isRed;
+};
+#pragma pack(pop)
 //-----------------------------------------------------------------------------
 // networking stuff
 
@@ -208,6 +241,7 @@ extern "C"
 // demo is loaded
 A3DYLIBSYMBOL a3_DemoState *a3demoCB_load(a3_DemoState *demoState, a3boolean hotbuild)
 {
+
 	const a3ui32 stateSize = a3demo_getPersistentStateSize();
 	const a3ui32 trigSamplesPerDegree = 4;
 	
@@ -276,6 +310,11 @@ A3DYLIBSYMBOL a3_DemoState *a3demoCB_load(a3_DemoState *demoState, a3boolean hot
 
 		//Chat manager
 		InitChatManager(demoState->chat);
+
+
+		
+		*myGame.gameObject = GameObject();
+		*myGame.eventManager = EventManager();
 	}
 
 	// return persistent state pointer
