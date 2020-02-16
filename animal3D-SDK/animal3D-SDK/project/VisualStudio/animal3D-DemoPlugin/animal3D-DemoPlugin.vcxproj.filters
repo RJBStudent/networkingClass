@@ -143,6 +143,9 @@
     <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\EventManager.h">
       <Filter>Header Files\A3_DEMO</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\GameObject.h">
+      <Filter>Header Files\A3_DEMO</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\resource\glsl\4x\fs\drawColorAttrib_fs4x.glsl">
