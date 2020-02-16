@@ -31,6 +31,8 @@
 #include "a3_dylib_config_export.h"
 #include "a3_DemoState.h"
 #include "Event.h"
+#include "GameObject.h"
+#include "EventManager.h"
 
 
 #include <stdio.h>
@@ -38,6 +40,13 @@
 #include <string.h>
 #include "GL/glew.h"
 
+
+struct Game {
+	EventManager eventManager[1];
+	GameObject gameObject[1];
+};
+
+Game myGame;
 
 //-----------------------------------------------------------------------------
 // networking stuff
@@ -206,6 +215,7 @@ extern "C"
 // demo is loaded
 A3DYLIBSYMBOL a3_DemoState *a3demoCB_load(a3_DemoState *demoState, a3boolean hotbuild)
 {
+
 	const a3ui32 stateSize = a3demo_getPersistentStateSize();
 	const a3ui32 trigSamplesPerDegree = 4;
 	
@@ -272,6 +282,11 @@ A3DYLIBSYMBOL a3_DemoState *a3demoCB_load(a3_DemoState *demoState, a3boolean hot
 
 		//Chat manager
 		InitChatManager(demoState->chat);
+
+
+		
+		*myGame.gameObject = GameObject();
+		*myGame.eventManager = EventManager();
 	}
 
 	// return persistent state pointer
