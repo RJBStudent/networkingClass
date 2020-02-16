@@ -30,6 +30,7 @@
 
 #include "a3_dylib_config_export.h"
 #include "a3_DemoState.h"
+#include "GameObject.h"
 #include "Event.h"
 
 
@@ -194,6 +195,7 @@ extern "C"
 	A3DYLIBSYMBOL void a3demoCB_mouseMove(a3_DemoState *demoState, a3i32 cursorX, a3i32 cursorY);
 	A3DYLIBSYMBOL void a3demoCB_mouseLeave(a3_DemoState *demoState);
 	A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState *demoState);
+	A3DYLIBSYMBOL void UpdateInput(a3_DemoState *demoState);
 
 #ifdef __cplusplus
 }
@@ -209,6 +211,8 @@ A3DYLIBSYMBOL a3_DemoState *a3demoCB_load(a3_DemoState *demoState, a3boolean hot
 	const a3ui32 stateSize = a3demo_getPersistentStateSize();
 	const a3ui32 trigSamplesPerDegree = 4;
 	
+
+
 	// do any re-allocation tasks
 	if (demoState && hotbuild)
 	{
@@ -336,14 +340,14 @@ A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState *demoState)
 		{
 			// render timer ticked, update demo state and draw
 			//a3demo_input(demoState, demoState->renderTimer->secondsPerTick);
+			UpdateInput(demoState);
 			InputChatManager(demoState->chat, demoState);
 			a3netProcessInbound(demoState->net);
 			UpdateChatManager(demoState->chat, demoState);
 			//a3demo_update(demoState, demoState->renderTimer->secondsPerTick);
 			a3netProcessOutbound(demoState->net);
 			RenderAllApplications(demoState);
-
-
+			
 			// update input
 			a3mouseUpdate(demoState->mouse);
 			a3keyboardUpdate(demoState->keyboard);
@@ -460,12 +464,7 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 	// persistent state update
 	a3keyboardSetStateASCII(demoState->keyboard, (a3byte)asciiKey);
 
-	if (demoState->chat->states == 1 || demoState->chat->states == 0)
-	{
-		return;
-	}
-
-
+	
 
 	
 
@@ -686,9 +685,31 @@ A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState* demoState)
 	}
 
 	
+	
 
 }
 
+
+A3DYLIBSYMBOL void UpdateInput(a3_DemoState* demoState)
+{
+	if (demoState->keyboard->key.key[a3key_downArrow] && !demoState->keyboard->key0.key[a3key_downArrow])
+	{
+		printf("Down");
+	}
+	if (demoState->keyboard->key.key[a3key_upArrow] && !demoState->keyboard->key0.key[a3key_upArrow])
+	{
+		printf("Up");
+	}
+	if (demoState->keyboard->key.key[a3key_leftArrow] && !demoState->keyboard->key0.key[a3key_leftArrow])
+	{
+		printf("Left");
+	}
+	if (demoState->keyboard->key.key[a3key_rightArrow] && !demoState->keyboard->key0.key[a3key_rightArrow])
+	{
+		printf("Right");
+	}
+
+}
 
 
 
