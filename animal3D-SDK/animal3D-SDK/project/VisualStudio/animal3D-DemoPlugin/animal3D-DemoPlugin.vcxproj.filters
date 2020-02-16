@@ -108,10 +108,16 @@
     <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_Networking\a3_NetworkingManager.cpp">
       <Filter>Source Files\common\A3_DEMO\a3_Networking</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_demo_callbacks.c">
+    <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\Event.cpp">
+      <Filter>Source Files\common\A3_DEMO</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\EventManager.cpp">
       <Filter>Source Files\common\A3_DEMO</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_ChatManager.cpp">
+      <Filter>Source Files\common\A3_DEMO</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_demo_callbacks.cpp">
       <Filter>Source Files\common\A3_DEMO</Filter>
     </ClCompile>
   </ItemGroup>
@@ -136,6 +142,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\a3_ChatManager.h">
       <Filter>Source Files\common\A3_DEMO</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\Event.h">
+      <Filter>Header Files\A3_DEMO</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\EventManager.h">
+      <Filter>Header Files\A3_DEMO</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\GameObject.h">
+      <Filter>Header Files\A3_DEMO</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

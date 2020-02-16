@@ -30,6 +30,7 @@
 
 #include "a3_dylib_config_export.h"
 #include "a3_DemoState.h"
+#include "Event.h"
 
 
 #include <stdio.h>
