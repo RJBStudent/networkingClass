@@ -43,8 +43,6 @@
 #include "_utilities/a3_DemoSceneObject.h"
 #include "_utilities/a3_DemoShaderProgram.h"
 
-#include "a3_NetworkingManager.h"
-
 
 //-----------------------------------------------------------------------------
 
@@ -97,7 +95,6 @@ extern "C"
 	{
 		//---------------------------------------------------------------------
 		// general variables pertinent to the state
-
 		// terminate key pressed
 		a3i32 exitFlag;
 
@@ -154,9 +151,9 @@ extern "C"
 		a3ui32 activeCamera;
 
 
-		// networking
-		a3_NetworkingManager net[1];
 
+
+		
 
 		//---------------------------------------------------------------------
 		// object arrays: organized as anonymous unions for two reasons: 
@@ -291,6 +288,10 @@ extern "C"
 	void a3demo_setDefaultGraphicsState();
 	void a3demo_initScene(a3_DemoState *demoState);
 	void a3demo_initSceneRefresh(a3_DemoState *demoState);
+
+
+	
+
 
 
 //-----------------------------------------------------------------------------

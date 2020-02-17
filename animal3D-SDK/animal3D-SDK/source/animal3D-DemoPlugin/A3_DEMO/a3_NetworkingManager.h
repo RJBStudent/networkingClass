@@ -32,15 +32,12 @@
 #include "animal3D/animal3D.h"
 
 
+
 //-----------------------------------------------------------------------------
 
-#ifdef __cplusplus
-extern "C"
-{
-#else	// !__cplusplus
-	typedef struct a3_NetworkingManager				a3_NetworkingManager;
-#endif	// __cplusplus
-
+class EventManager;
+class GameObject;
+struct a3_ChatManager;
 
 //-----------------------------------------------------------------------------
 
@@ -52,6 +49,14 @@ extern "C"
 		a3ui16 port_inbound, port_outbound;
 		a3ui16 maxConnect_inbound, maxConnect_outbound;
 		void* peer;
+
+		int isServer;
+
+		a3netAddressStr ip;
+
+		void* connectedAddress;
+
+		int connected;
 	};
 
 
@@ -72,7 +77,7 @@ extern "C"
 
 
 	// process inbound packets
-	a3i32 a3netProcessInbound(a3_NetworkingManager* net);
+	a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameObject* go, a3_ChatManager* chat);
 
 	// process outbound packets
 	a3i32 a3netProcessOutbound(a3_NetworkingManager* net);
@@ -80,10 +85,6 @@ extern "C"
 
 //-----------------------------------------------------------------------------
 
-
-#ifdef __cplusplus
-}
-#endif	// __cplusplus
 
 
 #endif	// !__ANIMAL3D_NETWORKINGMANAGER_H
