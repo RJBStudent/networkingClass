@@ -8,15 +8,6 @@
 #include "a3_NetworkingManager.h"
 
 
-enum a3_NetGameMessages
-{
-	ID_CUSTOM_MESSAGE_START = ID_USER_PACKET_ENUM,
-
-	ID_GAME_MESSAGE_1,
-	ID_MOVE_MESSAGE
-
-};
-
 
 //*******************************	MOVEMENT STUFF *************************************************
 MoveEvent::MoveEvent(int x, int y, GameObject* target, bool isOrig)
@@ -39,9 +30,9 @@ void MoveEvent::Execute(a3_NetworkingManager* net)
 
 	if (isOriginal)
 	{
-		printf("SENDING MESSAGE");
 	MoveMessage message;
 	message.messageId = ID_MOVE_MESSAGE;
+	printf("SENDING MESSAGE %i\n", message.messageId);
 	message.x = xPos;
 	message.y = yPos;
 	

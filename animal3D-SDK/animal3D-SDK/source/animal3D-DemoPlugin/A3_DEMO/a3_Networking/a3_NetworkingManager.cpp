@@ -38,15 +38,6 @@
 //-----------------------------------------------------------------------------
 // networking stuff
 
-enum a3_NetGameMessages
-{
-	ID_CUSTOM_MESSAGE_START = ID_USER_PACKET_ENUM,
-
-	ID_GAME_MESSAGE_1,
-	ID_MOVE_MESSAGE
-
-};
-
 
 #pragma pack(push, 1)
 
@@ -234,12 +225,22 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameO
 				case ID_MOVE_MESSAGE:
 				{
 
-					printf("RECIEVED MOVE MESSAGE\n");
 					MoveMessage* message = (MoveMessage*)packet->data;
+					printf("RECIEVED MOVE MESSAGE\n");
+					
+
 					if (net->isServer)
 					{
+						MoveEvent* move = new MoveEvent(message->x, message->y, go, false);
+						events->AddEvent(move);
+						
+						MoveMessage newMessage;
+						newMessage.messageId = ID_MOVE_MESSAGE;
+						newMessage.x = message->x;
+						newMessage.y = message->y;
+
 						RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
-						peer->Send(reinterpret_cast<char*>(&message), sizeof(message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
+						peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
 						printf("SENDING OUT\n");
 					}
 					else
