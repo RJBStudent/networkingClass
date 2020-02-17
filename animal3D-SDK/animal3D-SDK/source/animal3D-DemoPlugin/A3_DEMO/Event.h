@@ -2,6 +2,8 @@
 
 #include <string>
 class GameObject;
+struct a3_NetworkingManager;
+
 
 class Event
 {
@@ -9,16 +11,18 @@ public:
 	Event(){}
 	~Event(){}
 
-	virtual void Execute() = 0;
+	bool isOriginal = true;
+
+	virtual void Execute(a3_NetworkingManager* net) = 0;
 };
 
 class MoveEvent : public Event
 {
 public:
-	MoveEvent(int x, int y, GameObject* target);
+	MoveEvent(int x, int y, GameObject* target, bool);
 	~MoveEvent();
 
-	void Execute();
+	void Execute(a3_NetworkingManager* net);
 
 private:
 	GameObject* owner;
@@ -29,10 +33,10 @@ private:
 class StringEvent : public Event
 {
 public:
-	StringEvent(std::string newString, GameObject* target);
+	StringEvent(std::string newString, GameObject* target, bool);
 	~StringEvent();
 
-	void Execute();
+	void Execute(a3_NetworkingManager* net);
 
 private:
 	GameObject* owner;
@@ -42,10 +46,10 @@ private:
 class BoolEvent : public Event
 {
 public:
-	BoolEvent(bool newIsRed, GameObject* target);
+	BoolEvent(bool newIsRed, GameObject* target, bool);
 	~BoolEvent();
 
-	void Execute();
+	void Execute(a3_NetworkingManager* net);
 
 private:
 	GameObject* owner;

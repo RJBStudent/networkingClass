@@ -3,13 +3,9 @@
 
 #include "animal3D/animal3D.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#else	// !__cplusplus
-typedef struct a3_ChatManager				a3_ChatManager;
-typedef struct a3_Message					a3_Message;
-#endif	// __cplusplus
+struct a3_NetworkingManager;
+struct a3_DemoState;
+
 
 #define TEXT_ARRAY_SIZE 500
 #define MAX_MESSAGES_RECEIVED 50
@@ -50,10 +46,25 @@ struct a3_ChatManager
 		IN_CHAT = 2
 	}states;
 };
-
-
-#ifdef __cplusplus
-}
-#endif	// __cplusplus
+///<summary>
+	///Initialize Chat Manager
+	///</summary>
+a3i32 InitChatManager(a3_ChatManager* chatManager);
+/// <summary>
+/// Add Input
+/// </summary>
+a3i32 InputChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
+/// <summary>
+/// Update time left on messages
+/// </summary>
+a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* demoState, a3_NetworkingManager* net);
+/// <summary>
+/// Render all messages in chat
+/// </summary>
+a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState, a3_NetworkingManager* net );
+/// <summary>
+/// Add message to list from networked list
+/// </summary>
+//a3i32 AddMessage(a3_ChatManager* chatManager, a3_NetChatMessage newMessage);
 
 #endif // !A3_CHATMANAGER_H

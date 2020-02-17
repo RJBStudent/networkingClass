@@ -43,9 +43,6 @@
 #include "_utilities/a3_DemoSceneObject.h"
 #include "_utilities/a3_DemoShaderProgram.h"
 
-#include "a3_NetworkingManager.h"
-#include "a3_ChatManager.h"
-
 
 //-----------------------------------------------------------------------------
 
@@ -154,12 +151,8 @@ extern "C"
 		a3ui32 activeCamera;
 
 
-		// networking
-		a3_NetworkingManager net[1];
 
 
-		// chat
-		a3_ChatManager chat[1];
 		
 
 		//---------------------------------------------------------------------
@@ -297,26 +290,7 @@ extern "C"
 	void a3demo_initSceneRefresh(a3_DemoState *demoState);
 
 
-	///<summary>
-	///Initialize Chat Manager
-	///</summary>
-	a3i32 InitChatManager(a3_ChatManager* chatManager);
-	/// <summary>
-	/// Add Input
-	/// </summary>
-	a3i32 InputChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
-	/// <summary>
-	/// Update time left on messages
-	/// </summary>
-	a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* demoState);
-	/// <summary>
-	/// Render all messages in chat
-	/// </summary>
-	a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState);
-	/// <summary>
-	/// Add message to list from networked list
-	/// </summary>
-	//a3i32 AddMessage(a3_ChatManager* chatManager, a3_NetChatMessage newMessage);
+	
 
 
 

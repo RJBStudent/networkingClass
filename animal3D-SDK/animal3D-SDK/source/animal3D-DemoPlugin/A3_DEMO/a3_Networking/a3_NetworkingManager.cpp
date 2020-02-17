@@ -30,17 +30,13 @@
 #include "RakNet/RakNetTypes.h"
 #include "RakNet/BitStream.h"
 #include "RakNet/GetTime.h"
+#include "A3_DEMO/NetworkMessages.h"
+#include "A3_DEMO/EventManager.h"
+#include "A3_DEMO/Event.h"
 
 
 //-----------------------------------------------------------------------------
 // networking stuff
-
-enum a3_NetGameMessages
-{
-	ID_CUSTOM_MESSAGE_START = ID_USER_PACKET_ENUM,
-
-	ID_GAME_MESSAGE_1,
-};
 
 
 #pragma pack(push, 1)
@@ -132,7 +128,7 @@ a3i32 a3netDisconnect(a3_NetworkingManager* net)
 
 
 // process inbound packets
-a3i32 a3netProcessInbound(a3_NetworkingManager* net)
+a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameObject* go)
 {
 	if (net && net->peer)
 	{
@@ -189,7 +185,7 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net)
 						bsOut->Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
 						bsOut->Write("Hello world");
 						peer->Send(bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
-
+						net->connectedAddress = &packet->systemAddress;
 						// ****TO-DO: write timestamped message
 						printf("\n time : %u", (unsigned int)RakNet::GetTime());
 
@@ -226,7 +222,36 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net)
 						printf("%s\n", rs.C_String());
 					}
 					break;
+				case ID_MOVE_MESSAGE:
+				{
 
+					MoveMessage* message = (MoveMessage*)packet->data;
+					printf("RECIEVED MOVE MESSAGE\n");
+					
+
+					if (net->isServer)
+					{
+						MoveEvent* move = new MoveEvent(message->x, message->y, go, false);
+						events->AddEvent(move);
+						
+						MoveMessage newMessage;
+						newMessage.messageId = ID_MOVE_MESSAGE;
+						newMessage.x = message->x;
+						newMessage.y = message->y;
+
+						RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
+						peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
+						printf("SENDING OUT\n");
+					}
+					else
+					{
+						MoveEvent* move = new MoveEvent(message->x, message->y, go, false);
+						events->AddEvent(move);
+						printf("ADDING EVENT\n");
+					}
+				}
+
+					break;
 				default:
 					printf("Message with identifier %i has arrived.\n", msg);
 					break;
@@ -244,6 +269,7 @@ a3i32 a3netProcessOutbound(a3_NetworkingManager* net)
 {
 	if (net && net->peer)
 	{
+		
 	}
 	return 0;
 }

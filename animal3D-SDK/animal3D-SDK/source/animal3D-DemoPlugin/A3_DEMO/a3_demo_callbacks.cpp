@@ -35,6 +35,9 @@
 #include "GameObject.h"
 #include "EventManager.h"
 
+#include "a3_NetworkingManager.h"
+#include "a3_ChatManager.h"
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,34 +48,17 @@
 struct Game {
 	EventManager eventManager[1];
 	GameObject gameObject[1];
+
+	// networking
+	a3_NetworkingManager net[1];
+
+	// chat
+	a3_ChatManager chat[1];
 };
 
 Game myGame;
 
-#pragma pack(push, 1)
-struct MoveMessage
-{
-	int messageId = 0;
-	int x = 0;
-	int y = 0;
-};
-#pragma pack(pop)
 
-#pragma pack(push, 1)
-struct StringMessage
-{
-	int messageId = 0;
-	char newString[512];
-};
-#pragma pack(pop)
-
-#pragma pack(push, 1)
-struct RedMessage
-{
-	int messageId = 0;
-	bool isRed;
-};
-#pragma pack(pop)
 //-----------------------------------------------------------------------------
 // networking stuff
 
@@ -86,22 +72,22 @@ void a3demo_startNetworking(a3_DemoState* demoState, a3boolean const isServer)
 
 	if (isServer)
 	{
-		if (a3netStartup(demoState->net, port_server, 0, maxConnections_server, 0) > 0)
+		if (a3netStartup(myGame.net, port_server, 0, maxConnections_server, 0) > 0)
 		{
-			demoState->net->isServer = 1;
+			myGame.net->isServer = 1;
 			printf("\n STARTED NETWORKING AS SERVER \n");
-				demoState->net->connected = 1;
+			myGame.net->connected = 1;
 		}
 	}
 	else
 	{
-		if (a3netStartup(demoState->net, 0, port_server, 0, maxConnections_client) > 0)
+		if (a3netStartup(myGame.net, 0, port_server, 0, maxConnections_client) > 0)
 		{
-			if (a3netConnect(demoState->net, demoState->net->ip) > 0)
+			if (a3netConnect(myGame.net, myGame.net->ip) > 0)
 			{
-				demoState->net->isServer = 0;
+				myGame.net->isServer = 0;
 				printf("\n STARTED NETWORKING AS CLIENT \n");
-				demoState->net->connected = 1;
+				myGame.net->connected = 1;
 			}
 
 		}
@@ -110,9 +96,13 @@ void a3demo_startNetworking(a3_DemoState* demoState, a3boolean const isServer)
 
 void a3demo_stopNetworking(a3_DemoState* demoState)
 {
-	if (a3netDisconnect(demoState->net) > 0)
-		if (a3netShutdown(demoState->net) > 0)
+	if (a3netDisconnect(myGame.net) > 0)
+		if (a3netShutdown(myGame.net) > 0)
+		{
+			myGame.net->connected = false;
+			myGame.net->isServer = false;
 			printf("\n SHUT DOWN NETWORKING \n");
+		}
 }
 
 
@@ -229,6 +219,7 @@ extern "C"
 	A3DYLIBSYMBOL void a3demoCB_mouseLeave(a3_DemoState *demoState);
 	A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState *demoState);
 	A3DYLIBSYMBOL void UpdateInput(a3_DemoState *demoState);
+	A3DYLIBSYMBOL void HandleOutput(a3_DemoState* demoState);
 
 #ifdef __cplusplus
 }
@@ -309,7 +300,7 @@ A3DYLIBSYMBOL a3_DemoState *a3demoCB_load(a3_DemoState *demoState, a3boolean hot
 		a3demo_initScene(demoState);
 
 		//Chat manager
-		InitChatManager(demoState->chat);
+		InitChatManager(myGame.chat);
 
 
 		
@@ -380,11 +371,12 @@ A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState *demoState)
 			// render timer ticked, update demo state and draw
 			//a3demo_input(demoState, demoState->renderTimer->secondsPerTick);
 			UpdateInput(demoState);
-			InputChatManager(demoState->chat, demoState);
-			a3netProcessInbound(demoState->net);
-			UpdateChatManager(demoState->chat, demoState);
+			InputChatManager(myGame.chat, demoState);
+			a3netProcessInbound(myGame.net, myGame.eventManager, myGame.gameObject);
+			UpdateChatManager(myGame.chat, demoState, myGame.net);
 			//a3demo_update(demoState, demoState->renderTimer->secondsPerTick);
-			a3netProcessOutbound(demoState->net);
+			//a3netProcessOutbound(myGame.net);
+			HandleOutput(demoState);
 			RenderAllApplications(demoState);
 			
 			// update input
@@ -504,17 +496,12 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 	a3keyboardSetStateASCII(demoState->keyboard, (a3byte)asciiKey);
 
 	
-
-	
+	if (myGame.chat->states == 1 || myGame.chat->states == 0)
+		return;
 
 	// handle special cases immediately
 	switch (asciiKey)
 	{
-		// uncomment to make escape key kill the current demo
-		// if disabled, use 'exit demo' menu option
-//	case 27: 
-//		demoState->exitFlag = 1;
-//		break;
 
 
 		// stop networking
@@ -532,94 +519,7 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 		a3demo_startNetworking(demoState, 0);
 		break;
 	}
-	/*
-		// reload (T) or toggle (t) text
-	case 'T':
-		if (!a3textIsInitialized(demoState->text))
-		{
-			a3demo_initializeText(demoState->text);
-			demoState->textInit = 1;
-		}
-		else
-		{
-			a3textRelease(demoState->text);
-			demoState->textInit = 0;
-		}
-		break;
-	case 't':
-		demoState->textMode = (demoState->textMode + 1) % demoState->textModeCount;
-		break;
-
-		// reload all shaders in real-time
-	case 'P':
-		a3demo_unloadShaders(demoState);
-		a3demo_loadShaders(demoState);
-		break;
-
-
-		// change pipeline mode
-	case '.':
-		demoState->demoMode = (demoState->demoMode + 1) % demoState->demoModeCount;
-		break;
-	case ',':
-		demoState->demoMode = (demoState->demoMode + demoState->demoModeCount - 1) % demoState->demoModeCount;
-		break;
-
-		// change pipeline stage
-	case '>':
-		demoSubMode = demoState->demoSubMode[demoState->demoMode] = (demoSubMode + 1) % demoSubModeCount;
-		break;
-	case '<':
-		demoSubMode = demoState->demoSubMode[demoState->demoMode] = (demoSubMode + demoSubModeCount - 1) % demoSubModeCount;
-		break;
-
-		// change stage output
-	case '}':
-		demoState->demoOutputMode[demoState->demoMode][demoSubMode] = (demoOutput + 1) % demoOutputCount;
-		break;
-	case '{':
-		demoState->demoOutputMode[demoState->demoMode][demoSubMode] = (demoOutput + demoOutputCount - 1) % demoOutputCount;
-		break;
-
-
-		// toggle grid
-	case 'g':
-		demoState->displayGrid = 1 - demoState->displayGrid;
-		break;
-
-		// toggle world axes
-	case 'x':
-		demoState->displayWorldAxes = 1 - demoState->displayWorldAxes;
-		break;
-
-		// toggle object axes
-	case 'z':
-		demoState->displayObjectAxes = 1 - demoState->displayObjectAxes;
-		break;
-
-		// toggle tangent bases on vertices or other
-	case 'B':
-		demoState->displayTangentBases = 1 - demoState->displayTangentBases;
-		break;
-
-
-		// update animation
-	case 'm':
-		demoState->updateAnimation = 1 - demoState->updateAnimation;
-		break;
-	}
-
-
-	// callback for current mode
-	switch (demoState->demoMode)
-	{
-		// main render pipeline
-	case demoStateMode_main:
-		a3demoCB_keyCharPress_main(demoState, asciiKey,
-			demoSubMode, demoOutput, demoSubModeCount, demoOutputCount);
-		break;
-	}
-	*/
+	
 }
 
 // ASCII key is held
@@ -707,15 +607,15 @@ A3DYLIBSYMBOL void a3demoCB_mouseLeave(a3_DemoState *demoState)
 A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState* demoState)
 {
 	glClear(GL_COLOR_BUFFER_BIT);
-	RenderChatManager(demoState->chat, demoState);
+	RenderChatManager(myGame.chat, demoState, myGame.net);
 
-	if (demoState->chat->states == 0 || demoState->net->connected == 0)
+	if (myGame.chat->states == 0 || myGame.net->connected == 0)
 	{
 		a3textDraw(demoState->text, -1, -0.9f, -1, 1, 1, 1, 1, "AS SOON AS IP IS ENTERED PRESS 1 TO ENTER AS SERVER AND 2 TO ENTER AS CLIENT");
 	}
 	else
 	{
-		if (demoState->net->isServer == 1)
+		if (myGame.net->isServer == 1)
 		{
 
 		a3textDraw(demoState->text, 0, 0, -1, 1, 1, 1, 1, "THIS IS THE SERVER");
@@ -723,7 +623,7 @@ A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState* demoState)
 
 	}
 
-	
+	myGame.gameObject->Render(demoState);
 	
 
 }
@@ -731,23 +631,45 @@ A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState* demoState)
 
 A3DYLIBSYMBOL void UpdateInput(a3_DemoState* demoState)
 {
+	if (myGame.net->isServer)
+		return;
+
 	if (demoState->keyboard->key.key[a3key_downArrow] && !demoState->keyboard->key0.key[a3key_downArrow])
 	{
-		printf("Down");
+		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX() , myGame.gameObject->getY() - 10, myGame.gameObject, true);
+		myGame.eventManager->AddEvent(newEvent);
+
+		
 	}
 	if (demoState->keyboard->key.key[a3key_upArrow] && !demoState->keyboard->key0.key[a3key_upArrow])
 	{
-		printf("Up");
+
+		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX() , myGame.gameObject->getY() + 10, myGame.gameObject, true);
+		myGame.eventManager->AddEvent(newEvent);
+		
 	}
 	if (demoState->keyboard->key.key[a3key_leftArrow] && !demoState->keyboard->key0.key[a3key_leftArrow])
 	{
-		printf("Left");
+
+		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX()-10, myGame.gameObject->getY() , myGame.gameObject, true);
+		myGame.eventManager->AddEvent(newEvent);
+		
 	}
 	if (demoState->keyboard->key.key[a3key_rightArrow] && !demoState->keyboard->key0.key[a3key_rightArrow])
 	{
-		printf("Right");
+
+		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX() + 10, myGame.gameObject->getY(), myGame.gameObject, true);
+		myGame.eventManager->AddEvent(newEvent);
+		
 	}
 
+}
+
+
+
+A3DYLIBSYMBOL void HandleOutput(a3_DemoState* demoState)
+{
+	myGame.eventManager->HandleEvents(myGame.net);
 }
 
 
