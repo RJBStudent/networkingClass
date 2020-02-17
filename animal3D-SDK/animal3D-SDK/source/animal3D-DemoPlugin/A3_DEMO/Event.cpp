@@ -90,7 +90,7 @@ void BoolEvent::Execute(a3_NetworkingManager* net)
 	if (isOriginal)
 	{
 		RedMessage message;
-		message.messageId = ID_STRING_MESSAGE;
+		message.messageId = ID_ISRED_MESSAGE;
 		printf("SENDING MESSAGE %i\n", message.messageId);
 		message.isRed = isRed;
 

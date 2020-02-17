@@ -306,6 +306,7 @@ A3DYLIBSYMBOL a3_DemoState *a3demoCB_load(a3_DemoState *demoState, a3boolean hot
 		
 		*myGame.gameObject = GameObject();
 		*myGame.eventManager = EventManager();
+		myGame.net->connected = 0;
 	}
 
 	// return persistent state pointer
@@ -633,6 +634,8 @@ A3DYLIBSYMBOL void UpdateInput(a3_DemoState* demoState)
 {
 	if (myGame.net->isServer)
 		return;
+	if(myGame.net->connected == 0)
+		return;
 
 	if (demoState->keyboard->key.key[a3key_downArrow] && !demoState->keyboard->key0.key[a3key_downArrow])
 	{
@@ -665,6 +668,12 @@ A3DYLIBSYMBOL void UpdateInput(a3_DemoState* demoState)
 	if (demoState->keyboard->key.key[a3key_enter] && !demoState->keyboard->key0.key[a3key_enter])
 	{
 		StringEvent* stringEvent = new StringEvent(myGame.chat->textInput , myGame.gameObject, true);
+		myGame.eventManager->AddEvent(stringEvent);
+	}
+	if (demoState->keyboard->key.key[a3key_control] && !demoState->keyboard->key0.key[a3key_control])
+	{
+		BoolEvent* boolEvent = new BoolEvent(!myGame.gameObject->getRed(), myGame.gameObject, true);
+		myGame.eventManager->AddEvent(boolEvent);
 	}
 }
 

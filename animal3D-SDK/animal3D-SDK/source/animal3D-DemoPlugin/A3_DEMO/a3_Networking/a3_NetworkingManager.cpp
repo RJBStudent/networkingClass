@@ -312,7 +312,7 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameO
 						events->AddEvent(move);
 
 						RedMessage newMessage;
-						newMessage.messageId = ID_STRING_MESSAGE;
+						newMessage.messageId = ID_ISRED_MESSAGE;
 						newMessage.isRed = message->isRed;
 
 						RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;

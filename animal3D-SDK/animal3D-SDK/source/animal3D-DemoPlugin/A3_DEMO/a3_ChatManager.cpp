@@ -81,15 +81,17 @@ a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* demoState, a3
 		case 2:
 			//SEND MESSAGE TO SERVER
 		{
-
-			a3_NetChatMessage chatMessage;
-			chatMessage.typeID = ID_CHAT_MESSAGE;
-			strcpy(chatMessage.user, chatManager->user);
-			strcpy(chatMessage.message, chatManager->textInput);
-			RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
-			RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
-			peer->Send(reinterpret_cast<char*>(&chatMessage), sizeof(chatMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);
-
+			if (!net->isServer || !net->connected)
+			{
+				a3_NetChatMessage chatMessage;
+				chatMessage.typeID = ID_CHAT_MESSAGE;
+				strcpy(chatMessage.user, chatManager->user);
+				strcpy(chatMessage.message, chatManager->textInput);
+				RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
+				RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
+				peer->Send(reinterpret_cast<char*>(&chatMessage), sizeof(chatMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);
+			}
+			
 		}
 			break;
 		default:
@@ -100,7 +102,7 @@ a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* demoState, a3
 		memset(chatManager->textInput, 0, TEXT_ARRAY_SIZE);
 		chatManager->inputIndex = 0;
 	}
-	printf("%f\n", demoState->renderTimer->secondsPerTick);
+	
 
 	for( int i =0;
 		i < MAX_MESSAGES_RECEIVED;
