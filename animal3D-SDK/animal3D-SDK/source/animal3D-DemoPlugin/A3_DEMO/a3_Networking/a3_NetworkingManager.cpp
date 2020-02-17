@@ -194,7 +194,7 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameO
 						bsOut->Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
 						bsOut->Write("Hello world");
 						peer->Send(bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
-
+						net->connectedAddress = &packet->systemAddress;
 						// ****TO-DO: write timestamped message
 						printf("\n time : %u", (unsigned int)RakNet::GetTime());
 
@@ -234,16 +234,19 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameO
 				case ID_MOVE_MESSAGE:
 				{
 
+					printf("RECIEVED MOVE MESSAGE\n");
 					MoveMessage* message = (MoveMessage*)packet->data;
 					if (net->isServer)
 					{
 						RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
-						peer->Send(reinterpret_cast<char*>(&message), sizeof(message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, (RakNet::SystemAddress)net->ip, true);
+						peer->Send(reinterpret_cast<char*>(&message), sizeof(message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
+						printf("SENDING OUT\n");
 					}
 					else
 					{
 						MoveEvent* move = new MoveEvent(message->x, message->y, go, false);
 						events->AddEvent(move);
+						printf("ADDING EVENT\n");
 					}
 				}
 

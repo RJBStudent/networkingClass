@@ -32,12 +32,11 @@
 #include "animal3D/animal3D.h"
 
 
-//-----------------------------------------------------------------------------
 
+//-----------------------------------------------------------------------------
 
 class EventManager;
 class GameObject;
-
 
 //-----------------------------------------------------------------------------
 
@@ -53,6 +52,8 @@ class GameObject;
 		int isServer;
 
 		a3netAddressStr ip;
+
+		void* connectedAddress;
 
 		int connected;
 	};

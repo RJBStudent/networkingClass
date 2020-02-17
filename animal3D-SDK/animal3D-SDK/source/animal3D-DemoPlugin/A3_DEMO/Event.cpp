@@ -39,13 +39,15 @@ void MoveEvent::Execute(a3_NetworkingManager* net)
 
 	if (isOriginal)
 	{
+		printf("SENDING MESSAGE");
 	MoveMessage message;
 	message.messageId = ID_MOVE_MESSAGE;
 	message.x = xPos;
 	message.y = yPos;
 	
 	RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
-	peer->Send(reinterpret_cast<char*>(&message), sizeof(message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, (RakNet::SystemAddress)net->ip, false);
+	RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
+	peer->Send(reinterpret_cast<char*>(&message), sizeof(message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address , false);
 	}
 }
 
