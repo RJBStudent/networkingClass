@@ -58,6 +58,17 @@ StringEvent::~StringEvent()
 void StringEvent::Execute(a3_NetworkingManager* net)
 {
 	owner->setString(myString);
+	if (isOriginal)
+	{
+		StringMessage message;
+		message.messageId = ID_STRING_MESSAGE;
+		printf("SENDING MESSAGE %i\n", message.messageId);
+		strcpy(message.newString, myString.c_str());
+
+		RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
+		RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
+		peer->Send(reinterpret_cast<char*>(&message), sizeof(message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);
+	}
 }
 
 //*******************************	BOOL STUFF *************************************************
@@ -76,4 +87,15 @@ BoolEvent::~BoolEvent()
 void BoolEvent::Execute(a3_NetworkingManager* net)
 {
 	owner->setRed(isRed);
+	if (isOriginal)
+	{
+		RedMessage message;
+		message.messageId = ID_STRING_MESSAGE;
+		printf("SENDING MESSAGE %i\n", message.messageId);
+		message.isRed = isRed;
+
+		RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
+		RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
+		peer->Send(reinterpret_cast<char*>(&message), sizeof(message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);
+	}
 }

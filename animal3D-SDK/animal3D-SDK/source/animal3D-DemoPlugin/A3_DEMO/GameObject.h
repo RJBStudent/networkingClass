@@ -6,7 +6,7 @@
 class GameObject
 {
 public:
-	GameObject(int x = 0, int y = 0, std::string newString = "", bool red = false)
+	GameObject(int x = 0, int y = 0, std::string newString = "GameObject", bool red = false)
 	{
 		xPos = x;
 		yPos = y;
@@ -32,12 +32,12 @@ public:
 		a3f32 width = (a3f32)demoState->windowWidth;
 		if (isRed)
 		{
-			a3textDraw(demoState->text, (x/ width),  (y / height), -1, 1, 0, 0, 1, "%s", myString);
+			a3textDraw(demoState->text, (x/ width),  (y / height), -1, 1, 0, 0, 1, "%s", myString.c_str());
 
 		}
 		else
 		{
-			a3textDraw(demoState->text, (x/ width), (y / height), -1, 0, 0, 1, 1, "%s", myString);
+			a3textDraw(demoState->text, (x/ width), (y / height), -1, 0, 0, 1, 1, "%s", myString.c_str());
 		}
 	}
 	//void Update(a3_DemoState* const demoState);

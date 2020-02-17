@@ -252,6 +252,62 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameO
 				}
 
 					break;
+				case ID_STRING_MESSAGE:
+				{
+
+					StringMessage* message = (StringMessage*)packet->data;
+					printf("RECIEVED MOVE MESSAGE\n");
+
+
+					if (net->isServer)
+					{
+						StringEvent* move = new StringEvent(message->newString, go, false);
+						events->AddEvent(move);
+
+						StringMessage newMessage;
+						newMessage.messageId = ID_STRING_MESSAGE;
+						strcpy(newMessage.newString, message->newString);
+
+						RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
+						peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
+						printf("SENDING OUT\n");
+					}
+					else
+					{
+						StringEvent* move = new StringEvent(message->newString, go, false);
+						events->AddEvent(move);
+						printf("ADDING EVENT\n");
+					}
+				}
+				case ID_ISRED_MESSAGE:
+				{
+
+					RedMessage* message = (RedMessage*)packet->data;
+					printf("RECIEVED MOVE MESSAGE\n");
+
+
+					if (net->isServer)
+					{
+						BoolEvent* move = new BoolEvent(message->isRed, go, false);
+						events->AddEvent(move);
+
+						RedMessage newMessage;
+						newMessage.messageId = ID_STRING_MESSAGE;
+						newMessage.isRed = message->isRed;
+
+						RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
+						peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
+						printf("SENDING OUT\n");
+					}
+					else
+					{
+						BoolEvent* move = new BoolEvent(message->isRed, go, false);
+						events->AddEvent(move);
+						printf("ADDING EVENT\n");
+					}
+				}
+
+				break;
 				default:
 					printf("Message with identifier %i has arrived.\n", msg);
 					break;

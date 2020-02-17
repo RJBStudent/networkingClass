@@ -662,7 +662,10 @@ A3DYLIBSYMBOL void UpdateInput(a3_DemoState* demoState)
 		myGame.eventManager->AddEvent(newEvent);
 		
 	}
-
+	if (demoState->keyboard->key.key[a3key_enter] && !demoState->keyboard->key0.key[a3key_enter])
+	{
+		StringEvent* stringEvent = new StringEvent(myGame.chat->textInput , myGame.gameObject, true);
+	}
 }
 
 
