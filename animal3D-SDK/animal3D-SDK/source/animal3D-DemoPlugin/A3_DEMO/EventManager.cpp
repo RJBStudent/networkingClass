@@ -1,5 +1,6 @@
 #include "EventManager.h"
 #include "Event.h"
+#include "a3_NetworkingManager.h"
 
 EventManager::EventManager()
 {
@@ -11,12 +12,12 @@ EventManager::~EventManager()
 
 }
 
-void EventManager::HandleEvents()
+void EventManager::HandleEvents(a3_NetworkingManager* net)
 {
 	while (!events.empty())
 	{
 		Event* e = events.front();
-		e->Execute();
+		e->Execute(net);
 		events.pop();
 	}
 }

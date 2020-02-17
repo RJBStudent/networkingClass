@@ -2,6 +2,7 @@
 #include "a3_DemoState.h"
 #include <stdio.h>
 #include <string.h>
+#include "a3_NetworkingManager.h"
 
 
 
@@ -50,7 +51,7 @@ a3i32 InputChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoStat
 }
 
 
-a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* demoState)
+a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* demoState, a3_NetworkingManager* net)
 {
 	if ((demoState->keyboard->key.key[10] && !demoState->keyboard->key0.key[10]) ||
 		(demoState->keyboard->key.key[13] && !demoState->keyboard->key0.key[13]))
@@ -61,11 +62,11 @@ a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* demoState)
 		case 0:
 			if (chatManager->textInput[0] == 0)
 			{
-				strcpy(demoState->net->ip, "127.0.0.1");
+				strcpy(net->ip, "127.0.0.1");
 			}
 			else
 			{
-				strcpy(demoState->net->ip, chatManager->textInput);
+				strcpy(net->ip, chatManager->textInput);
 			}
 			chatManager->states = chatManager->USERNAME_INPUT;
 			break;
@@ -101,7 +102,7 @@ a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* demoState)
 	return 0;
 }
 
-a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState)
+a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoState, a3_NetworkingManager* net)
 {
 	switch (chatManager->states)
 	{
@@ -113,7 +114,7 @@ a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoSta
 		break;
 	case 2:
 
-		if (demoState->net->isServer == 0)
+		if (net->isServer == 0)
 		{
 
 		a3textDraw(demoState->text, -1, -0.9f, -1, 1, 1, 1, 1, "%s : %s", chatManager->user, chatManager->textInput);

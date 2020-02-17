@@ -35,6 +35,9 @@
 #include "GameObject.h"
 #include "EventManager.h"
 
+#include "a3_NetworkingManager.h"
+#include "a3_ChatManager.h"
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,34 +48,17 @@
 struct Game {
 	EventManager eventManager[1];
 	GameObject gameObject[1];
+
+	// networking
+	a3_NetworkingManager net[1];
+
+	// chat
+	a3_ChatManager chat[1];
 };
 
 Game myGame;
 
-#pragma pack(push, 1)
-struct MoveMessage
-{
-	int messageId = 0;
-	int x = 0;
-	int y = 0;
-};
-#pragma pack(pop)
 
-#pragma pack(push, 1)
-struct StringMessage
-{
-	int messageId = 0;
-	char newString[512];
-};
-#pragma pack(pop)
-
-#pragma pack(push, 1)
-struct RedMessage
-{
-	int messageId = 0;
-	bool isRed;
-};
-#pragma pack(pop)
 //-----------------------------------------------------------------------------
 // networking stuff
 
@@ -86,22 +72,22 @@ void a3demo_startNetworking(a3_DemoState* demoState, a3boolean const isServer)
 
 	if (isServer)
 	{
-		if (a3netStartup(demoState->net, port_server, 0, maxConnections_server, 0) > 0)
+		if (a3netStartup(myGame.net, port_server, 0, maxConnections_server, 0) > 0)
 		{
-			demoState->net->isServer = 1;
+			myGame.net->isServer = 1;
 			printf("\n STARTED NETWORKING AS SERVER \n");
-			demoState->net->connected = 1;
+			myGame.net->connected = 1;
 		}
 	}
 	else
 	{
-		if (a3netStartup(demoState->net, 0, port_server, 0, maxConnections_client) > 0)
+		if (a3netStartup(myGame.net, 0, port_server, 0, maxConnections_client) > 0)
 		{
-			if (a3netConnect(demoState->net, demoState->net->ip) > 0)
+			if (a3netConnect(myGame.net, myGame.net->ip) > 0)
 			{
-				demoState->net->isServer = 0;
+				myGame.net->isServer = 0;
 				printf("\n STARTED NETWORKING AS CLIENT \n");
-				demoState->net->connected = 1;
+				myGame.net->connected = 1;
 			}
 
 		}
@@ -110,11 +96,11 @@ void a3demo_startNetworking(a3_DemoState* demoState, a3boolean const isServer)
 
 void a3demo_stopNetworking(a3_DemoState* demoState)
 {
-	if (a3netDisconnect(demoState->net) > 0)
-		if (a3netShutdown(demoState->net) > 0)
+	if (a3netDisconnect(myGame.net) > 0)
+		if (a3netShutdown(myGame.net) > 0)
 		{
-			demoState->net->connected = false;
-			demoState->net->isServer = false;
+			myGame.net->connected = false;
+			myGame.net->isServer = false;
 			printf("\n SHUT DOWN NETWORKING \n");
 		}
 }
@@ -314,7 +300,7 @@ A3DYLIBSYMBOL a3_DemoState *a3demoCB_load(a3_DemoState *demoState, a3boolean hot
 		a3demo_initScene(demoState);
 
 		//Chat manager
-		InitChatManager(demoState->chat);
+		InitChatManager(myGame.chat);
 
 
 		
@@ -385,11 +371,11 @@ A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState *demoState)
 			// render timer ticked, update demo state and draw
 			//a3demo_input(demoState, demoState->renderTimer->secondsPerTick);
 			UpdateInput(demoState);
-			InputChatManager(demoState->chat, demoState);
-			a3netProcessInbound(demoState->net);
-			UpdateChatManager(demoState->chat, demoState);
+			InputChatManager(myGame.chat, demoState);
+			a3netProcessInbound(myGame.net, myGame.eventManager, myGame.gameObject);
+			UpdateChatManager(myGame.chat, demoState, myGame.net);
 			//a3demo_update(demoState, demoState->renderTimer->secondsPerTick);
-			//a3netProcessOutbound(demoState->net);
+			//a3netProcessOutbound(myGame.net);
 			HandleOutput(demoState);
 			RenderAllApplications(demoState);
 			
@@ -510,7 +496,7 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 	a3keyboardSetStateASCII(demoState->keyboard, (a3byte)asciiKey);
 
 	
-	if (demoState->chat->states == 1 || demoState->chat->states == 0)
+	if (myGame.chat->states == 1 || myGame.chat->states == 0)
 		return;
 
 	// handle special cases immediately
@@ -621,15 +607,15 @@ A3DYLIBSYMBOL void a3demoCB_mouseLeave(a3_DemoState *demoState)
 A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState* demoState)
 {
 	glClear(GL_COLOR_BUFFER_BIT);
-	RenderChatManager(demoState->chat, demoState);
+	RenderChatManager(myGame.chat, demoState, myGame.net);
 
-	if (demoState->chat->states == 0 || demoState->net->connected == 0)
+	if (myGame.chat->states == 0 || myGame.net->connected == 0)
 	{
 		a3textDraw(demoState->text, -1, -0.9f, -1, 1, 1, 1, 1, "AS SOON AS IP IS ENTERED PRESS 1 TO ENTER AS SERVER AND 2 TO ENTER AS CLIENT");
 	}
 	else
 	{
-		if (demoState->net->isServer == 1)
+		if (myGame.net->isServer == 1)
 		{
 
 		a3textDraw(demoState->text, 0, 0, -1, 1, 1, 1, 1, "THIS IS THE SERVER");
@@ -645,12 +631,12 @@ A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState* demoState)
 
 A3DYLIBSYMBOL void UpdateInput(a3_DemoState* demoState)
 {
-	if (demoState->net->isServer)
+	if (myGame.net->isServer)
 		return;
 
 	if (demoState->keyboard->key.key[a3key_downArrow] && !demoState->keyboard->key0.key[a3key_downArrow])
 	{
-		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX() , myGame.gameObject->getY() - 10, myGame.gameObject);
+		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX() , myGame.gameObject->getY() - 10, myGame.gameObject, true);
 		myGame.eventManager->AddEvent(newEvent);
 
 		
@@ -658,21 +644,21 @@ A3DYLIBSYMBOL void UpdateInput(a3_DemoState* demoState)
 	if (demoState->keyboard->key.key[a3key_upArrow] && !demoState->keyboard->key0.key[a3key_upArrow])
 	{
 
-		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX() , myGame.gameObject->getY() + 10, myGame.gameObject);
+		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX() , myGame.gameObject->getY() + 10, myGame.gameObject, true);
 		myGame.eventManager->AddEvent(newEvent);
 		
 	}
 	if (demoState->keyboard->key.key[a3key_leftArrow] && !demoState->keyboard->key0.key[a3key_leftArrow])
 	{
 
-		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX()-10, myGame.gameObject->getY() , myGame.gameObject);
+		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX()-10, myGame.gameObject->getY() , myGame.gameObject, true);
 		myGame.eventManager->AddEvent(newEvent);
 		
 	}
 	if (demoState->keyboard->key.key[a3key_rightArrow] && !demoState->keyboard->key0.key[a3key_rightArrow])
 	{
 
-		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX() + 10, myGame.gameObject->getY(), myGame.gameObject);
+		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX() + 10, myGame.gameObject->getY(), myGame.gameObject, true);
 		myGame.eventManager->AddEvent(newEvent);
 		
 	}
@@ -683,7 +669,7 @@ A3DYLIBSYMBOL void UpdateInput(a3_DemoState* demoState)
 
 A3DYLIBSYMBOL void HandleOutput(a3_DemoState* demoState)
 {
-	myGame.eventManager->HandleEvents();
+	myGame.eventManager->HandleEvents(myGame.net);
 }
 
 
