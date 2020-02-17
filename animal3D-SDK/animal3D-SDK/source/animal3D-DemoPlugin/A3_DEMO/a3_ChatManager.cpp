@@ -3,12 +3,15 @@
 #include <stdio.h>
 #include <string.h>
 #include "a3_NetworkingManager.h"
+#include "A3_DEMO/NetworkMessages.h"	
+#include "RakNet/RakPeerInterface.h"
 
 
 
 a3i32 InitChatManager(a3_ChatManager* chatManager)
 {
 	chatManager->inputIndex = 0;
+	chatManager->messageIndex = 0;
 	for (a3_Message message : chatManager->messageList)
 	{
 		message.render = 0; //Should not render
@@ -77,7 +80,17 @@ a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* demoState, a3
 			break;
 		case 2:
 			//SEND MESSAGE TO SERVER
+		{
 
+			a3_NetChatMessage chatMessage;
+			chatMessage.typeID = ID_CHAT_MESSAGE;
+			strcpy(chatMessage.user, chatManager->user);
+			strcpy(chatMessage.message, chatManager->textInput);
+			RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
+			RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
+			peer->Send(reinterpret_cast<char*>(&chatMessage), sizeof(chatMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);
+
+		}
 			break;
 		default:
 			break;
@@ -87,6 +100,7 @@ a3i32 UpdateChatManager(a3_ChatManager* chatManager, a3_DemoState* demoState, a3
 		memset(chatManager->textInput, 0, TEXT_ARRAY_SIZE);
 		chatManager->inputIndex = 0;
 	}
+	printf("%f\n", demoState->renderTimer->secondsPerTick);
 
 	for( int i =0;
 		i < MAX_MESSAGES_RECEIVED;
@@ -124,7 +138,7 @@ a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoSta
 		{
 			if (message.render == 1)
 			{
-				a3textDraw(demoState->text, startPos, 0, -1, 1, 1, 1, 1, "%s : %s", message.user, message.message);
+				a3textDraw(demoState->text,-0.9f, startPos, -1, 1, 1, 1, 1, "%s : %s", message.user, message.message);
 				startPos += 0.05f;
 			}
 		}
@@ -135,5 +149,18 @@ a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoSta
 	
 
 	
+	return 0;
+}
+
+
+a3i32 AddMessage(a3_ChatManager* chatManager, a3_NetChatMessage newMessage)
+{
+	strcpy(chatManager->messageList[chatManager->messageIndex].user, newMessage.user);
+	strcpy(chatManager->messageList[chatManager->messageIndex].message, newMessage.message);
+
+	chatManager->messageList[chatManager->messageIndex].render = true;
+	chatManager->messageList[chatManager->messageIndex].messageLength = 10;
+	chatManager->messageIndex = (chatManager->messageIndex+1 )% MAX_MESSAGES_RECEIVED;
+
 	return 0;
 }

@@ -37,6 +37,7 @@
 
 class EventManager;
 class GameObject;
+struct a3_ChatManager;
 
 //-----------------------------------------------------------------------------
 
@@ -76,7 +77,7 @@ class GameObject;
 
 
 	// process inbound packets
-	a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameObject* go);
+	a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameObject* go, a3_ChatManager* chat);
 
 	// process outbound packets
 	a3i32 a3netProcessOutbound(a3_NetworkingManager* net);
