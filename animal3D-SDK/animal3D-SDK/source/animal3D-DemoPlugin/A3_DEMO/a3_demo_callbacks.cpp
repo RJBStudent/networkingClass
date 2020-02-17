@@ -372,7 +372,7 @@ A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState *demoState)
 			//a3demo_input(demoState, demoState->renderTimer->secondsPerTick);
 			UpdateInput(demoState);
 			InputChatManager(myGame.chat, demoState);
-			a3netProcessInbound(myGame.net, myGame.eventManager, myGame.gameObject);
+			a3netProcessInbound(myGame.net, myGame.eventManager, myGame.gameObject, myGame.chat);
 			UpdateChatManager(myGame.chat, demoState, myGame.net);
 			//a3demo_update(demoState, demoState->renderTimer->secondsPerTick);
 			//a3netProcessOutbound(myGame.net);
@@ -609,16 +609,16 @@ A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState* demoState)
 	glClear(GL_COLOR_BUFFER_BIT);
 	RenderChatManager(myGame.chat, demoState, myGame.net);
 
-	if (myGame.chat->states == 0 || myGame.net->connected == 0)
+	if (myGame.chat->states == 2 && myGame.net->connected == 0)
 	{
-		a3textDraw(demoState->text, -1, -0.9f, -1, 1, 1, 1, 1, "AS SOON AS IP IS ENTERED PRESS 1 TO ENTER AS SERVER AND 2 TO ENTER AS CLIENT");
+		a3textDraw(demoState->text, -1, 0.9f, -1, 1, 1, 1, 1, "AS SOON AS IP IS ENTERED PRESS 1 TO ENTER AS SERVER AND 2 TO ENTER AS CLIENT");
 	}
 	else
 	{
 		if (myGame.net->isServer == 1)
 		{
 
-		a3textDraw(demoState->text, 0, 0, -1, 1, 1, 1, 1, "THIS IS THE SERVER");
+		a3textDraw(demoState->text, 0, 0.9f, -1, 1, 1, 1, 1, "THIS IS THE SERVER");
 		}
 
 	}

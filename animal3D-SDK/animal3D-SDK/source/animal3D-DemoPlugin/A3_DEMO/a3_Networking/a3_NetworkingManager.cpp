@@ -26,10 +26,10 @@
 #include "../a3_NetworkingManager.h"
 
 #include "RakNet/RakPeerInterface.h"
-#include "RakNet/MessageIdentifiers.h"
 #include "RakNet/RakNetTypes.h"
 #include "RakNet/BitStream.h"
 #include "RakNet/GetTime.h"
+#include "A3_DEMO/a3_ChatManager.h"
 #include "A3_DEMO/NetworkMessages.h"
 #include "A3_DEMO/EventManager.h"
 #include "A3_DEMO/Event.h"
@@ -128,7 +128,7 @@ a3i32 a3netDisconnect(a3_NetworkingManager* net)
 
 
 // process inbound packets
-a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameObject* go)
+a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameObject* go, a3_ChatManager* chat)
 {
 	if (net && net->peer)
 	{
@@ -252,6 +252,26 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameO
 				}
 
 					break;
+				case ID_CHAT_MESSAGE:
+				{
+					a3_NetChatMessage* message = (a3_NetChatMessage*)packet->data;
+					if (net->isServer)
+					{
+						a3_NetChatMessage newMessage;
+						newMessage.typeID = message->typeID;
+						strcpy(newMessage.user, message->user);
+						strcpy(newMessage.message, message->message);
+
+						RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
+						peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
+						printf("SENDING OUT\n");
+					}
+					else
+					{
+						AddMessage(chat, *message);
+					}
+				}
+				break;
 				default:
 					printf("Message with identifier %i has arrived.\n", msg);
 					break;

@@ -5,7 +5,7 @@
 
 struct a3_NetworkingManager;
 struct a3_DemoState;
-
+struct a3_NetChatMessage;
 
 #define TEXT_ARRAY_SIZE 500
 #define MAX_MESSAGES_RECEIVED 50
@@ -18,15 +18,7 @@ struct a3_Message
 	int render;
 };
 
-//Used For Networking Messages
-#pragma pack(push, 1)
-struct a3_NetChatMessage
-{
-	unsigned char typeID;
-	char message[TEXT_ARRAY_SIZE];
-	char user[TEXT_ARRAY_SIZE];
-};
-#pragma pack (pop)
+
 
 
 
@@ -34,6 +26,7 @@ struct a3_ChatManager
 {
 
 	a3_Message messageList[MAX_MESSAGES_RECEIVED];
+	unsigned int messageIndex;
 
 	char user[TEXT_ARRAY_SIZE];
 	char textInput[TEXT_ARRAY_SIZE];
@@ -65,6 +58,6 @@ a3i32 RenderChatManager(a3_ChatManager* chatManager, a3_DemoState* const demoSta
 /// <summary>
 /// Add message to list from networked list
 /// </summary>
-//a3i32 AddMessage(a3_ChatManager* chatManager, a3_NetChatMessage newMessage);
+a3i32 AddMessage(a3_ChatManager* chatManager, a3_NetChatMessage newMessage);
 
 #endif // !A3_CHATMANAGER_H
