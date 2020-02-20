@@ -64,20 +64,15 @@ Game myGame;
 
 void a3demo_startNetworking(a3_DemoState* demoState, a3boolean const isServer)
 {
-	a3netAddressStr const ipAddress = "216.93.149.186";
 	a3ui16 const port_server = 60006;
 	a3ui16 const port_client = 60005;
 	a3ui16 const maxConnections_server = 16;
 	a3ui16 const maxConnections_client = 1;
 
 	if (isServer)
-	{
-		if (a3netStartup(myGame.net, port_server, 0, maxConnections_server, 0) > 0)
-		{
-			myGame.net->isServer = 1;
-			printf("\n STARTED NETWORKING AS SERVER \n");
-			myGame.net->connected = 1;
-		}
+	{			
+		myGame.net->isServer = 1;
+		myGame.chat->states = a3_ChatManager::ChatStates(3);
 	}
 	else
 	{
@@ -499,6 +494,51 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState *demoState, a3i32 asciiKey
 	
 	if (myGame.chat->states == 1 || myGame.chat->states == 0)
 		return;
+	else if (myGame.chat->states == 3)
+	{
+		switch (asciiKey)
+		{
+			// DATa PUSH
+		case '1':
+		{
+
+			myGame.net->dataPackageType = (a3_NetworkingManager::DataPackagingType)1;
+			printf("\nData PUSH \n");
+		}
+			break;
+
+			// DATA SHARE
+		case '2':
+		{
+
+			myGame.net->dataPackageType = (a3_NetworkingManager::DataPackagingType)2;
+			printf("\nData SHARING \n");
+		}
+			break;
+
+			// DATA COUPLED
+		case '3':
+		{
+
+			myGame.net->dataPackageType = (a3_NetworkingManager::DataPackagingType)3;
+			printf("\nData COUPLED \n");
+		}
+			break;
+		}
+
+		a3ui16 const port_server = 60006;
+		a3ui16 const port_client = 60005;
+		a3ui16 const maxConnections_server = 16;
+		a3ui16 const maxConnections_client = 1;
+		if (a3netStartup(myGame.net, port_server, 0, maxConnections_server, 0) > 0)
+		{
+			printf("\nSTARTED NETWORKING AS SERVER \n");
+			myGame.net->connected = 1;
+			myGame.chat->states = myGame.chat->IN_CHAT;
+		}
+
+		return;
+	}
 
 	// handle special cases immediately
 	switch (asciiKey)
@@ -613,6 +653,10 @@ A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState* demoState)
 	if (myGame.chat->states == 2 && myGame.net->connected == 0)
 	{
 		a3textDraw(demoState->text, -1, 0.9f, -1, 1, 1, 1, 1, "AS SOON AS IP IS ENTERED PRESS 1 TO ENTER AS SERVER AND 2 TO ENTER AS CLIENT");
+	}
+	else if(myGame.chat->states == 3)
+	{
+		a3textDraw(demoState->text, -1, 0.9f, -1, 1, 1, 1, 1, "ENTER 1 FOR DATA PUSH, ENTER 2 FOR DATA SHARING, ENTER 3 FOR DATA COUPLED");
 	}
 	else
 	{

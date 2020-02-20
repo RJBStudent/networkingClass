@@ -36,7 +36,8 @@ struct a3_ChatManager
 	{
 		STARTUP = 0,
 		USERNAME_INPUT = 1,
-		IN_CHAT = 2
+		IN_CHAT = 2,
+		ENTER_DATA_SEND_MODE = 3
 	}states;
 };
 ///<summary>

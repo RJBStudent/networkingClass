@@ -57,6 +57,17 @@ struct a3_ChatManager;
 		void* connectedAddress;
 
 		int connected;
+
+
+		enum DataPackagingType
+		{
+			NULL_TYPE = 0,
+			DATA_PUSH,
+			DATA_SHARE,
+			DATA_COUPLED,
+			NUM_OF_TYPES
+		};
+		DataPackagingType dataPackageType;
 	};
 
 
