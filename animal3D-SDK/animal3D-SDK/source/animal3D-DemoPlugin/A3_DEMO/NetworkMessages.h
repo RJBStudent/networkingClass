@@ -9,7 +9,9 @@ enum a3_NetGameMessages
 	ID_STRING_MESSAGE,
 	ID_MOVE_MESSAGE,
 	ID_ISRED_MESSAGE,
-	ID_CHAT_MESSAGE
+	ID_CHAT_MESSAGE,
+	ID_CONNECTED_MESSAGE
+	
 };
 
 
@@ -48,3 +50,11 @@ struct a3_NetChatMessage
 	char user[TEXT_ARRAY_SIZE];
 };
 #pragma pack (pop)
+
+#pragma pack(push, 1)
+struct IntMessage
+{
+	int messageId = 0;
+	int intValue;
+};
+#pragma pack(pop)
