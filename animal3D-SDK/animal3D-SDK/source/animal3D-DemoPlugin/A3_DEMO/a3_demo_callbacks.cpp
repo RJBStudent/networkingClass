@@ -686,57 +686,97 @@ A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState* demoState)
 }
 
 
+void UpdateLoop(a3_DemoState* demoState)
+{
+	if (!myGame.net->connected)
+		return;
+
+	switch (myGame.net->dataPackageType)
+	{
+	case 1: //SERVER ONLY
+	{
+		if (myGame.net->isServer)
+		{
+			//UPDATE BOIDS 
+		}
+
+	}
+	break;
+	case 2: //SERVER SENDS MESSAGES, CLIENT UPDATES
+	{
+		if (!myGame.net->isServer)
+		{
+			//Update your(the client) boids only
+		}
+	}
+	break;
+	case 3: //EVERYONE UPDATES THIER OWN, SERVER INCLUDED
+	{
+		//update your boids with everyone elses boids in consideration
+		//dependet on other states
+	}
+	break;
+	default:
+		break;
+	}
+}
+
 A3DYLIBSYMBOL void UpdateInput(a3_DemoState* demoState)
 {
+	   	 
 	if (myGame.net->isServer)
 		return;
 	if (myGame.net->connected == 0)
 		return;
 
-	if (demoState->keyboard->key.key[a3key_downArrow] && !demoState->keyboard->key0.key[a3key_downArrow])
+	/*if (demoState->keyboard->key.key[a3key_downArrow] && !demoState->keyboard->key0.key[a3key_downArrow])
 	{
 		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX(), myGame.gameObject->getY() - 10, myGame.gameObject, true);
 		myGame.eventManager->AddEvent(newEvent);
 
 
-	}
-	if (demoState->keyboard->key.key[a3key_upArrow] && !demoState->keyboard->key0.key[a3key_upArrow])
-	{
-
-		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX(), myGame.gameObject->getY() + 10, myGame.gameObject, true);
-		myGame.eventManager->AddEvent(newEvent);
-
-	}
-	if (demoState->keyboard->key.key[a3key_leftArrow] && !demoState->keyboard->key0.key[a3key_leftArrow])
-	{
-
-		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX() - 10, myGame.gameObject->getY(), myGame.gameObject, true);
-		myGame.eventManager->AddEvent(newEvent);
-
-	}
-	if (demoState->keyboard->key.key[a3key_rightArrow] && !demoState->keyboard->key0.key[a3key_rightArrow])
-	{
-
-		MoveEvent* newEvent = new MoveEvent(myGame.gameObject->getX() + 10, myGame.gameObject->getY(), myGame.gameObject, true);
-		myGame.eventManager->AddEvent(newEvent);
-
-	}
-	if (demoState->keyboard->key.key[a3key_enter] && !demoState->keyboard->key0.key[a3key_enter])
-	{
-		StringEvent* stringEvent = new StringEvent(myGame.chat->textInput, myGame.gameObject, true);
-		myGame.eventManager->AddEvent(stringEvent);
-	}
-	if (demoState->keyboard->key.key[a3key_control] && !demoState->keyboard->key0.key[a3key_control])
-	{
-		BoolEvent* boolEvent = new BoolEvent(!myGame.gameObject->getRed(), myGame.gameObject, true);
-		myGame.eventManager->AddEvent(boolEvent);
-	}
+	}*/
 }
 
 
 
 A3DYLIBSYMBOL void HandleOutput(a3_DemoState* demoState)
 {
+	if (!myGame.net->connected)
+		return;
+	switch (myGame.net->dataPackageType)
+	{
+	case 1: //SERVER ONLY
+	{
+		if (myGame.net->isServer)
+		{
+			// send to clients
+		}
+	}
+	break;
+	case 2: //SERVER SENDS MESSAGES, CLIENT UPDATES
+	{
+		if (!myGame.net->isServer)
+		{
+			//Send to server
+		}
+	}
+	break;
+	case 3: //EVERYONE UPDATES THIER OWN, SERVER INCLUDED
+	{
+		if (!myGame.net->isServer)
+		{
+			//Send to server
+		}
+		else
+		{
+			//send to each client
+		}
+	}
+	break;
+	default:
+		break;
+	}
 	myGame.eventManager->HandleEvents(myGame.net);
 }
 
