@@ -37,6 +37,7 @@
 
 #include "a3_NetworkingManager.h"
 #include "a3_ChatManager.h"
+#include "BoidManager.h"
 
 
 #include <stdio.h>
@@ -54,6 +55,8 @@ struct Game {
 
 	// chat
 	a3_ChatManager chat[1];
+
+	BoidManager boidManager[1];
 };
 
 Game myGame;
@@ -384,7 +387,7 @@ A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState* demoState)
 			//a3demo_input(demoState, demoState->renderTimer->secondsPerTick);
 			UpdateInput(demoState);
 			InputChatManager(myGame.chat, demoState);
-			a3netProcessInbound(myGame.net, myGame.eventManager, myGame.gameObject, myGame.chat);
+			a3netProcessInbound(myGame.net, myGame.eventManager, myGame.boidManager, myGame.chat);
 			UpdateChatManager(myGame.chat, demoState, myGame.net);
 			//a3demo_update(demoState, demoState->renderTimer->secondsPerTick);
 			//a3netProcessOutbound(myGame.net);

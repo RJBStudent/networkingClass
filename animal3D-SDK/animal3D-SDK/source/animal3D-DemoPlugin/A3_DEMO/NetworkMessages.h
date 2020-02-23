@@ -10,7 +10,9 @@ enum a3_NetGameMessages
 	ID_MOVE_MESSAGE,
 	ID_ISRED_MESSAGE,
 	ID_CHAT_MESSAGE,
-	ID_CONNECTED_MESSAGE
+	ID_CONNECTED_MESSAGE,
+	ID_SET_BOID_ID,
+	ID_SET_BOID_POS
 	
 };
 
@@ -56,5 +58,16 @@ struct IntMessage
 {
 	int messageId = 0;
 	int intValue;
+};
+#pragma pack(pop)
+
+
+#pragma pack(push, 1)
+struct Vector2Message
+{
+	int messageId = 0;
+	float xValue;
+	float yValue;
+	int idIndex;
 };
 #pragma pack(pop)

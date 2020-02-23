@@ -33,6 +33,7 @@
 #include "A3_DEMO/NetworkMessages.h"
 #include "A3_DEMO/EventManager.h"
 #include "A3_DEMO/Event.h"
+#include "../BoidManager.h"
 
 
 //-----------------------------------------------------------------------------
@@ -128,7 +129,7 @@ a3i32 a3netDisconnect(a3_NetworkingManager* net)
 
 
 // process inbound packets
-a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameObject* go, a3_ChatManager* chat)
+a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidManager* boidManager, a3_ChatManager* chat)
 {
 	if (net && net->peer)
 	{
@@ -227,7 +228,11 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameO
 						connectMessage.intValue = net->dataPackageType;
 						connectMessage.messageId = ID_CONNECTED_MESSAGE;
 						peer->Send(reinterpret_cast<char*>(&connectMessage), sizeof(connectMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
-
+						IntMessage boidIDMessage;
+						net->nextUserID++;
+						boidIDMessage.intValue = net->nextUserID;
+						boidIDMessage.messageId = ID_SET_BOID_ID;
+						peer->Send(reinterpret_cast<char*>(&boidIDMessage), sizeof(boidIDMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
 					}
 					else
 					{
@@ -236,6 +241,31 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameO
 					}
 				}
 				break;
+				case ID_SET_BOID_ID:
+				{
+					IntMessage* message = (IntMessage*)packet->data;
+					boidManager->boidID = message->intValue;
+				}
+					break;
+
+				case ID_SET_BOID_POS:
+				{
+					Vector2Message* message = (Vector2Message*)packet->data;
+					if (net->isServer)
+					{
+						if(net->dataPackageType == net->DATA_COUPLED)
+						{
+							//Set positions of boids on server side
+							
+						}
+						peer->Send(reinterpret_cast<char*>(&message), sizeof(*message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, true);
+					}
+					else
+					{
+						//Set positions of boids on client side at message index
+					}
+				}
+					break;
 				default:
 					printf("Message with identifier %i has arrived.\n", msg);
 					break;
