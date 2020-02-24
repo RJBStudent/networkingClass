@@ -12,12 +12,17 @@ BoidManager::BoidManager()
 
 BoidManager::~BoidManager()
 {
-
+	while (!boids.empty())
+	{
+		delete boids.back();
+		boids.pop_back();
+	}
 }
 
-void BoidManager::SpawnNewBoid()
+void BoidManager::SpawnNewBoid(Vector2 pos, Vector2 velocity, bool active,  float rotation)
 {
-
+	Boid* newBoid = new Boid(active, pos, velocity, rotation);
+	boids.push_back(newBoid);
 }
 
 void BoidManager::UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState)
@@ -32,7 +37,7 @@ void BoidManager::UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 			{
 				if (i < 0 || i > boids.size())
 					continue;
-				boids[i].Update(demoState,(float)demoState->renderTimer->secondsPerTick);
+				boids[i]->Update(demoState,(float)demoState->renderTimer->secondsPerTick);
 			}
 		}
 	}
@@ -45,7 +50,7 @@ void BoidManager::UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 			{
 				if (i < 0 || i > boids.size())
 					continue;
-				boids[i].Update(demoState, (float)demoState->renderTimer->secondsPerTick);
+				boids[i]->Update(demoState, (float)demoState->renderTimer->secondsPerTick);
 			}
 		}
 	}
@@ -56,7 +61,7 @@ void BoidManager::UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 		{
 			if (i < 0 || i > boids.size())
 				continue;
-			boids[i].Update(demoState, (float)demoState->renderTimer->secondsPerTick);
+			boids[i]->Update(demoState, (float)demoState->renderTimer->secondsPerTick);
 		}
 	}
 	break;
@@ -72,14 +77,13 @@ void BoidManager::RenderBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 	case 1:
 	case 2:
 	{
-		if (!net->isServer)
-	
+		if (net->isServer)	
 		{
 		for (unsigned int i = 0; i < boids.size(); i++)
 		{
 			if (i < 0 || i > boids.size())
 				continue;
-			boids[i].Render(demoState);
+			boids[i]->Render(demoState);
 		}
 		}
 	}
@@ -90,7 +94,7 @@ void BoidManager::RenderBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 		{
 			if (i < 0 || i > boids.size())
 				continue;
-			boids[i].Render(demoState);
+			boids[i]->Render(demoState);
 		}
 	}
 	break;
@@ -103,8 +107,8 @@ void BoidManager::UpdateSingleBoid(int boidIndex, float x, float y)
 {
 	if (boidIndex < 0 || (unsigned)boidIndex >= boids.size())
 	{
-		boids[boidID].position.x = x;
-		boids[boidID].position.y = y;
+		boids[boidID]->position.x = x;
+		boids[boidID]->position.y = y;
 	}
 }
 
@@ -124,8 +128,8 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 				Vector2Message newMessage;
 				newMessage.messageId = ID_SET_BOID_POS;
 				newMessage.idIndex = i;
-				newMessage.xValue = boids[i].position.x;
-				newMessage.yValue = boids[i].position.y;
+				newMessage.xValue = boids[i]->position.x;
+				newMessage.yValue = boids[i]->position.y;
 				RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
 				peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
 			}
@@ -144,8 +148,8 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 				Vector2Message newMessage;
 				newMessage.messageId = ID_SET_BOID_POS;
 				newMessage.idIndex = i;
-				newMessage.xValue = boids[i].position.x;
-				newMessage.yValue = boids[i].position.y;
+				newMessage.xValue = boids[i]->position.x;
+				newMessage.yValue = boids[i]->position.y;
 				RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
 				RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
 				peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);
@@ -165,8 +169,8 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 					Vector2Message newMessage;
 					newMessage.messageId = ID_SET_BOID_POS;
 					newMessage.idIndex = i;
-					newMessage.xValue = boids[i].position.x;
-					newMessage.yValue = boids[i].position.y;
+					newMessage.xValue = boids[i]->position.x;
+					newMessage.yValue = boids[i]->position.y;
 					RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
 					peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
 				}
@@ -182,8 +186,8 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 				Vector2Message newMessage;
 				newMessage.messageId = ID_SET_BOID_POS;
 				newMessage.idIndex = i;
-				newMessage.xValue = boids[i].position.x;
-				newMessage.yValue = boids[i].position.y;
+				newMessage.xValue = boids[i]->position.x;
+				newMessage.yValue = boids[i]->position.y;
 				RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
 				RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
 				peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);

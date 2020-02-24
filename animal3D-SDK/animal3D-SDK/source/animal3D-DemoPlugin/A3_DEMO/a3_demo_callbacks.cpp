@@ -38,6 +38,7 @@
 #include "a3_NetworkingManager.h"
 #include "a3_ChatManager.h"
 #include "BoidManager.h"
+#include "Vector2.h"
 
 
 #include <stdio.h>
@@ -117,6 +118,46 @@ void a3demo_stopNetworking(a3_DemoState* demoState)
 			myGame.net->isServer = false;
 			printf("\n SHUT DOWN NETWORKING \n");
 		}
+}
+
+void UpdateLoop(a3_DemoState* demoState)
+{
+	if (!myGame.net->connected)
+		return;
+	myGame.boidManager->UpdateBoids(myGame.net, demoState);
+
+
+	switch (myGame.net->dataPackageType)
+	{
+	case 1: //SERVER ONLY
+	{
+		if (myGame.net->isServer)
+		{
+			//UPDATE BOIDS 
+
+
+
+		}
+
+	}
+	break;
+	case 2: //SERVER SENDS MESSAGES, CLIENT UPDATES
+	{
+		if (!myGame.net->isServer)
+		{
+			//Update your(the client) boids only
+		}
+	}
+	break;
+	case 3: //EVERYONE UPDATES THIER OWN, SERVER INCLUDED
+	{
+		//update your boids with everyone elses boids in consideration
+		//dependet on other states
+	}
+	break;
+	default:
+		break;
+	}
 }
 
 
@@ -389,6 +430,7 @@ A3DYLIBSYMBOL a3i32 a3demoCB_idle(a3_DemoState* demoState)
 			InputChatManager(myGame.chat, demoState);
 			a3netProcessInbound(myGame.net, myGame.eventManager, myGame.boidManager, myGame.chat);
 			UpdateChatManager(myGame.chat, demoState, myGame.net);
+			UpdateLoop(demoState);
 			//a3demo_update(demoState, demoState->renderTimer->secondsPerTick);
 			//a3netProcessOutbound(myGame.net);
 			HandleOutput(demoState);
@@ -524,6 +566,10 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState* demoState, a3i32 asciiKey
 			myGame.net->dataPackageType = (a3_NetworkingManager::DataPackagingType)1;
 			printf("\nData PUSH \n");
 			SetUpServer();
+			for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
+			{
+				myGame.boidManager->SpawnNewBoid(Vector2(0,0), Vector2(1, 0), true);
+			}
 		}
 		break;
 
@@ -680,7 +726,7 @@ A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState* demoState)
 
 			a3textDraw(demoState->text, 0, 0.9f, -1, 1, 1, 1, 1, "THIS IS THE SERVER");
 		}
-
+		myGame.boidManager->RenderBoids(myGame.net, demoState);
 	}
 
 	myGame.gameObject->Render(demoState);
@@ -689,40 +735,7 @@ A3DYLIBSYMBOL void RenderAllApplications(a3_DemoState* demoState)
 }
 
 
-void UpdateLoop(a3_DemoState* demoState)
-{
-	if (!myGame.net->connected)
-		return;
 
-	switch (myGame.net->dataPackageType)
-	{
-	case 1: //SERVER ONLY
-	{
-		if (myGame.net->isServer)
-		{
-			//UPDATE BOIDS 
-		}
-
-	}
-	break;
-	case 2: //SERVER SENDS MESSAGES, CLIENT UPDATES
-	{
-		if (!myGame.net->isServer)
-		{
-			//Update your(the client) boids only
-		}
-	}
-	break;
-	case 3: //EVERYONE UPDATES THIER OWN, SERVER INCLUDED
-	{
-		//update your boids with everyone elses boids in consideration
-		//dependet on other states
-	}
-	break;
-	default:
-		break;
-	}
-}
 
 A3DYLIBSYMBOL void UpdateInput(a3_DemoState* demoState)
 {

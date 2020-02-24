@@ -4,6 +4,7 @@
 class Boid;
 struct a3_NetworkingManager;
 struct  a3_DemoState;
+class Vector2;
 
 class BoidManager
 {
@@ -11,7 +12,7 @@ public:
 	BoidManager();
 	~BoidManager();
 
-	void SpawnNewBoid();
+	void SpawnNewBoid(Vector2 pos, Vector2 velocity, bool active = false,  float rotation = 0);
 
 	void UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState);
 
@@ -26,5 +27,5 @@ public:
 	const static int BOIDS_PER_USER = 10;
 
 private:
-	std::vector<Boid> boids;
+	std::vector<Boid*> boids;
 };
