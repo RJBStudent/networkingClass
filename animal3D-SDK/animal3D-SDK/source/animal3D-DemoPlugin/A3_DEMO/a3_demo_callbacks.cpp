@@ -45,6 +45,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "GL/glew.h"
+#include <time.h>
+#include <stdlib.h>
+
+
 
 
 struct Game {
@@ -287,7 +291,8 @@ extern "C"
 // demo is loaded
 A3DYLIBSYMBOL a3_DemoState* a3demoCB_load(a3_DemoState* demoState, a3boolean hotbuild)
 {
-
+	srand((unsigned int)time(NULL));   // Initialization, should only be called once.
+	
 	const a3ui32 stateSize = a3demo_getPersistentStateSize();
 	const a3ui32 trigSamplesPerDegree = 4;
 
@@ -568,7 +573,10 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState* demoState, a3i32 asciiKey
 			SetUpServer();
 			for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
 			{
-				myGame.boidManager->SpawnNewBoid(Vector2(0,0), Vector2(1, 0), true);
+				float x = (float)(rand() % 100) + -50;
+				float y = (float)(rand() % 100) + -50;
+
+				myGame.boidManager->SpawnNewBoid(Vector2(x*0,y * 0), Vector2(x, y), true, 20);
 			}
 		}
 		break;

@@ -2,12 +2,13 @@
 #include "A3_DEMO/a3_DemoState.h"
 #include "animal3D/animal3D.h"
 
-Boid::Boid(bool activeState, Vector2 newPos, Vector2 newVel, float newRot)
+Boid::Boid(bool activeState, Vector2 newPos, Vector2 newVel, float newRot, int newRadius)
 {
 	active = activeState;
 	position = newPos;
 	velocity = newVel;
 	rotation = newRot;
+	radius = newRadius;
 }
 
 Boid::~Boid()
@@ -26,17 +27,17 @@ void Boid::Update(a3_DemoState* demoState, float dt)
 
 	if (position.x > width)
 	{
-		position.x = 0;
+		position.x = -width;
 	}
-	if (position.x < 0)
+	if (position.x < -width)
 	{
 		position.x = width;
 	}
 	if (position.y > height)
 	{
-		position.y = 0;
+		position.y = -height;
 	}
-	if (position.y < 0)
+	if (position.y < -height)
 	{
 		position.y = height;
 	}
@@ -54,21 +55,3 @@ void Boid::Render(a3_DemoState* demoState)
 	a3textDraw(demoState->text, (x / width), (y / height), -1, 1, 0, 0, 1, "A");
 }
 
-//Operator overoads
-
-Vector2 Vector2::operator*(float const& num)
-{
-	Vector2 output;
-	output.x = x * num;
-	output.y = y * num;
-
-	return output;
-}
-Vector2 Vector2::operator+=(Vector2 const& val)
-{
-	Vector2 output;
-	output.x = x + val.x;
-	output.y = y + val.y;
-
-	return output;
-}

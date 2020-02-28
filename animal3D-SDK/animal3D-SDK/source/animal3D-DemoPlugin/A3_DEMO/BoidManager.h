@@ -12,7 +12,7 @@ public:
 	BoidManager();
 	~BoidManager();
 
-	void SpawnNewBoid(Vector2 pos, Vector2 velocity, bool active = false,  float rotation = 0);
+	void SpawnNewBoid(Vector2 pos, Vector2 velocity, bool active = false,  float rotation = 0, int radius = 5);
 
 	void UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState);
 
@@ -21,6 +21,8 @@ public:
 	void ProcessOutbounds(a3_NetworkingManager* net);
 
 	void UpdateSingleBoid(int boidIndex, float x, float y);
+
+	void DetectCollisions();
 
 	int boidID = 0;
 
