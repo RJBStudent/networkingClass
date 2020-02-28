@@ -571,12 +571,14 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState* demoState, a3i32 asciiKey
 			myGame.net->dataPackageType = (a3_NetworkingManager::DataPackagingType)1;
 			printf("\nData PUSH \n");
 			SetUpServer();
+
+
 			for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
 			{
 				float x = (float)(rand() % 100) + -50;
 				float y = (float)(rand() % 100) + -50;
 
-				myGame.boidManager->SpawnNewBoid(Vector2(x*0,y * 0), Vector2(x, y), true, 20);
+				myGame.boidManager->SpawnNewBoid(Vector2(x*10,y * 10), Vector2(x*3, y*3), true, 0, 15);
 			}
 		}
 		break;

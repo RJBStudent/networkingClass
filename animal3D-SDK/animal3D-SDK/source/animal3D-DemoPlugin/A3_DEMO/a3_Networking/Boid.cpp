@@ -2,7 +2,7 @@
 #include "A3_DEMO/a3_DemoState.h"
 #include "animal3D/animal3D.h"
 
-Boid::Boid(bool activeState, Vector2 newPos, Vector2 newVel, float newRot, int newRadius)
+Boid::Boid(bool activeState, Vector2 newPos, Vector2 newVel, float newRot, float newRadius)
 {
 	active = activeState;
 	position = newPos;
