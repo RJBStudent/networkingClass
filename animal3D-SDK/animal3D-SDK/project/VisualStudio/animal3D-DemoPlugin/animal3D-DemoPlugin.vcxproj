@@ -220,6 +220,7 @@
     <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\BoidManager.h" />
     <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\Event.h" />
     <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\EventManager.h" />
+    <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\Game.h" />
     <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\GameObject.h" />
     <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\NetworkMessages.h" />
     <ClInclude Include="..\..\..\source\animal3D-DemoPlugin\A3_DEMO\Vector2.h" />

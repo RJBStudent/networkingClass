@@ -66,8 +66,8 @@ struct IntMessage
 struct Vector2Message
 {
 	int messageId = 0;
-	float xValue;
-	float yValue;
-	int idIndex;
+	float xValue[30];
+	float yValue[30];
+	int idIndex[30];
 };
 #pragma pack(pop)

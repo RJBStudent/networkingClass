@@ -40,6 +40,10 @@
 #include "BoidManager.h"
 #include "Vector2.h"
 
+#include "RakNet/RakPeerInterface.h"
+#include "RakNet/RakNetTypes.h"
+#include "RakNet/BitStream.h"
+#include "NetworkMessages.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,7 +69,6 @@ struct Game {
 };
 
 Game myGame;
-
 
 //-----------------------------------------------------------------------------
 // networking stuff
@@ -770,39 +773,7 @@ A3DYLIBSYMBOL void HandleOutput(a3_DemoState* demoState)
 {
 	if (!myGame.net->connected)
 		return;
-	switch (myGame.net->dataPackageType)
-	{
-	case 1: //SERVER ONLY
-	{
-		if (myGame.net->isServer)
-		{
-			// send to clients
-		}
-	}
-	break;
-	case 2: //SERVER SENDS MESSAGES, CLIENT UPDATES
-	{
-		if (!myGame.net->isServer)
-		{
-			//Send to server
-		}
-	}
-	break;
-	case 3: //EVERYONE UPDATES THIER OWN, SERVER INCLUDED
-	{
-		if (!myGame.net->isServer)
-		{
-			//Send to server
-		}
-		else
-		{
-			//send to each client
-		}
-	}
-	break;
-	default:
-		break;
-	}
+	myGame.boidManager->ProcessOutbounds(myGame.net);
 	myGame.eventManager->HandleEvents(myGame.net);
 }
 
