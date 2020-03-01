@@ -19,10 +19,11 @@ BoidManager::~BoidManager()
 	}
 }
 
-void BoidManager::SpawnNewBoid(Vector2 pos, Vector2 velocity, bool active,  float rotation)
+void BoidManager::SpawnNewBoid(Vector2 pos, Vector2 velocity, bool active,  float rotation, float radius)
 {
-	Boid* newBoid = new Boid(active, pos, velocity, rotation);
+	Boid* newBoid = new Boid(active, pos, velocity, rotation, radius);
 	boids.push_back(newBoid);
+	printf("%f %f\n", newBoid->velocity.x, newBoid->velocity.y);
 }
 
 void BoidManager::UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState)
@@ -39,6 +40,7 @@ void BoidManager::UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 					continue;
 				boids[i]->Update(demoState,(float)demoState->renderTimer->secondsPerTick);
 			}
+			DetectCollisions();
 		}
 	}
 	break;
@@ -197,5 +199,31 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 	break;
 	default:
 		break;
+	}
+}
+
+void BoidManager::DetectCollisions()
+{
+	for (unsigned int i = 0; i < boids.size(); i++)
+	{
+		float currBoidRadius = boids[i]->radius;
+		Vector2 currBoidPosition = boids[i]->position;
+
+		for (unsigned int j = i+1; j < boids.size(); j++)
+		{
+			float otherBoidRadius = boids[j]->radius;
+			Vector2 otherBoidPosition = boids[j]->position;
+			float dstSquared = (float)((otherBoidPosition.x - currBoidPosition.x) * (otherBoidPosition.x - currBoidPosition.x)) +
+				(float)((otherBoidPosition.y - currBoidPosition.y) * (otherBoidPosition.y - currBoidPosition.y));
+			float radiiSquared = (currBoidRadius + otherBoidRadius) * (currBoidRadius + otherBoidRadius);
+
+			if (dstSquared <= radiiSquared)
+			{
+				Vector2 dir = otherBoidPosition - currBoidPosition;
+				boids[j]->velocity = dir.normalized() * 80;
+				dir -= dir * 2;
+				boids[i]->velocity = dir.normalized() * 80;
+			}
+		}
 	}
 }
