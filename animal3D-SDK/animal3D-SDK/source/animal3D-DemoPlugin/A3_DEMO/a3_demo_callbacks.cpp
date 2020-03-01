@@ -370,6 +370,19 @@ A3DYLIBSYMBOL a3_DemoState* a3demoCB_load(a3_DemoState* demoState, a3boolean hot
 		*myGame.gameObject = GameObject();
 		*myGame.eventManager = EventManager();
 		myGame.net->connected = 0;
+
+		for (int i = 0; i < (16) * BoidManager::BOIDS_PER_USER; i++)
+		{
+			float x = (float)(rand() % 100) + -50;
+			float y = (float)(rand() % 100) + -50;
+
+			int userID = i / BoidManager::BOIDS_PER_USER;
+			float r = (float)((16 - userID*5)%17) / 16;
+			float g = ((float)userID) / 16;
+			float b = (float)(userID%8) / 8;
+
+			myGame.boidManager->SpawnNewBoid(Vector2(x * 10, y * 10), Vector2(x * 3, y * 3), true, 0, 15, r, g, b, userID);
+		}
 	}
 
 	// return persistent state pointer
@@ -576,20 +589,13 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState* demoState, a3i32 asciiKey
 			SetUpServer();
 
 
-			for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
-			{
-				float x = (float)(rand() % 100) + -50;
-				float y = (float)(rand() % 100) + -50;
-
-				myGame.boidManager->SpawnNewBoid(Vector2(x*10,y * 10), Vector2(x*3, y*3), true, 0, 15);
-			}
+			
 		}
 		break;
 
 		// DATA SHARE
 		case '2':
 		{
-
 			myGame.net->dataPackageType = (a3_NetworkingManager::DataPackagingType)2;
 			printf("\nData SHARING \n");
 			SetUpServer();
@@ -600,9 +606,11 @@ A3DYLIBSYMBOL void a3demoCB_keyCharPress(a3_DemoState* demoState, a3i32 asciiKey
 		case '3':
 		{
 
+			
 			myGame.net->dataPackageType = (a3_NetworkingManager::DataPackagingType)3;
 			printf("\nData COUPLED \n");
 			SetUpServer();
+
 		}
 		break;
 		default:

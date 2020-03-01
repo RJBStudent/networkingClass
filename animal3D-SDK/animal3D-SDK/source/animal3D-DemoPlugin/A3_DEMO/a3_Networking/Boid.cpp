@@ -2,13 +2,17 @@
 #include "A3_DEMO/a3_DemoState.h"
 #include "animal3D/animal3D.h"
 
-Boid::Boid(bool activeState, Vector2 newPos, Vector2 newVel, float newRot, float newRadius)
+Boid::Boid(bool activeState, Vector2 newPos, Vector2 newVel, float newRot, float newRadius, float newR, float newG, float newB, int newID)
 {
 	active = activeState;
 	position = newPos;
 	velocity = newVel;
 	rotation = newRot;
 	radius = newRadius;
+	r = newR;
+	b = newB;
+	g = newG;
+	myID = newID;
 }
 
 Boid::~Boid()
@@ -52,6 +56,6 @@ void Boid::Render(a3_DemoState* demoState)
 	a3f32 y = (a3f32)position.y;
 	a3f32 height = (a3f32)demoState->windowHeight;
 	a3f32 width = (a3f32)demoState->windowWidth;
-	a3textDraw(demoState->text, (x / width), (y / height), -1, 1, 0, 0, 1, "A");
+	a3textDraw(demoState->text, (x / width), (y / height), -1, r, g, b, 1, "%i",myID);
 }
 

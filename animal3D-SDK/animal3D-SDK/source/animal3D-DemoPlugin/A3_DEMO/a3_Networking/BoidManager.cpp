@@ -19,9 +19,9 @@ BoidManager::~BoidManager()
 	}
 }
 
-void BoidManager::SpawnNewBoid(Vector2 pos, Vector2 velocity, bool active,  float rotation, float radius)
+void BoidManager::SpawnNewBoid(Vector2 pos, Vector2 velocity, bool active,  float rotation, float radius, float r, float g, float b, int id)
 {
-	Boid* newBoid = new Boid(active, pos, velocity, rotation, radius);
+	Boid* newBoid = new Boid(active, pos, velocity, rotation, radius, r, g, b, id);
 	boids.push_back(newBoid);
 	printf("%f %f\n", newBoid->velocity.x, newBoid->velocity.y);
 }
@@ -55,6 +55,7 @@ void BoidManager::UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 					continue;
 				boids[i]->Update(demoState, (float)demoState->renderTimer->secondsPerTick);
 			}
+			DetectCollisions();
 		}
 	}
 	break;
@@ -86,6 +87,7 @@ void BoidManager::RenderBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 		{
 			if (i < 0 || i > boids.size())
 				continue;
+			
 			boids[i]->Render(demoState);
 		}
 		}
@@ -144,19 +146,21 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 	{
 		if (!net->isServer)
 		{
-			/*for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
+				Vector2Message newMessage;
+				newMessage.messageId = ID_SET_BOID_POS;
+				memset(newMessage.idIndex, -1, 30);
+				
+			for (unsigned int i = boidID * BOIDS_PER_USER, j = 0; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++, j++)
 			{
 				if (i < 0 || i > boids.size())
 					continue;
-				Vector2Message newMessage;
-				newMessage.messageId = ID_SET_BOID_POS;
-				newMessage.idIndex = i;
-				newMessage.xValue = boids[i]->position.x;
-				newMessage.yValue = boids[i]->position.y;
+				newMessage.idIndex[j] = i;
+				newMessage.xValue[j] = boids[i]->position.x;
+				newMessage.yValue[j] = boids[i]->position.y;
+			}
 				RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
 				RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
 				peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);
-			}*/
 		}
 	}
 	break;
@@ -205,12 +209,12 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 
 void BoidManager::DetectCollisions()
 {
-	for (unsigned int i = 0; i < boids.size(); i++)
+	for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
 	{
 		float currBoidRadius = boids[i]->radius;
 		Vector2 currBoidPosition = boids[i]->position;
 
-		for (unsigned int j = i+1; j < boids.size(); j++)
+		for (unsigned int j = i + 1 ; (int)j < (boidID * BOIDS_PER_USER )+ BOIDS_PER_USER; j++)
 		{
 			float otherBoidRadius = boids[j]->radius;
 			Vector2 otherBoidPosition = boids[j]->position;

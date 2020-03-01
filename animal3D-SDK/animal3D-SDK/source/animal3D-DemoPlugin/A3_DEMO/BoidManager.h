@@ -12,7 +12,7 @@ public:
 	BoidManager();
 	~BoidManager();
 
-	void SpawnNewBoid(Vector2 pos, Vector2 velocity, bool active = false,  float rotation = 0, float radius = 5);
+	void SpawnNewBoid(Vector2 pos, Vector2 velocity, bool active = false,  float rotation = 0, float radius = 5, float r = 1, float g = 0, float b = 0, int id = 0);
 
 	void UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState);
 
