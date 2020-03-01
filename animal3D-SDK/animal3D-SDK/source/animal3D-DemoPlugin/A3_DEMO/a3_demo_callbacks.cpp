@@ -112,7 +112,10 @@ void SetUpServer()
 		myGame.net->connected = 1;
 		myGame.net->isServer = 1;
 		myGame.chat->states = myGame.chat->IN_CHAT;
+	
+		
 	}
+
 }
 
 
@@ -381,7 +384,7 @@ A3DYLIBSYMBOL a3_DemoState* a3demoCB_load(a3_DemoState* demoState, a3boolean hot
 			float g = ((float)userID) / 16;
 			float b = (float)(userID%8) / 8;
 
-			myGame.boidManager->SpawnNewBoid(Vector2(x * 10, y * 10), Vector2(x * 3, y * 3), true, 0, 15, r, g, b, userID);
+			myGame.boidManager->SpawnNewBoid(Vector2(x * 10, y * 10), Vector2(x * 3, y * 3), userID == 0, 0, 15, r, g, b, userID);
 		}
 	}
 

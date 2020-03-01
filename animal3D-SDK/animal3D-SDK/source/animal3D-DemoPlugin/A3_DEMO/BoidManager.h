@@ -22,7 +22,8 @@ public:
 
 	void UpdateSingleBoid(int boidIndex, float x, float y);
 
-	void DetectCollisions();
+	void DetectCollisions(bool everyone = false);
+	void SetBoidActive(int boidIndex, bool active = true);
 
 	int boidID = 0;
 

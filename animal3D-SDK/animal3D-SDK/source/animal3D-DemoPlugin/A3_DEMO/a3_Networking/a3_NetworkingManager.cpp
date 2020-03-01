@@ -248,7 +248,10 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 				case ID_SET_BOID_ID:
 				{
 					IntMessage* message = (IntMessage*)packet->data;
-					boidManager->boidID = message->intValue;					
+					boidManager->boidID = message->intValue;	
+
+					for (int i = boidManager->boidID * BoidManager::BOIDS_PER_USER; i < (boidManager->boidID *BoidManager::BOIDS_PER_USER) + BoidManager::BOIDS_PER_USER; i++)
+						boidManager->SetBoidActive(i);
 
 				}
 					break;
@@ -261,9 +264,12 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 						if(net->dataPackageType == net->DATA_COUPLED)
 						{
 							//Set positions of boids on server side
-							
+							for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
+							{
+								boidManager->UpdateSingleBoid(message->idIndex[i], message->xValue[i], message->yValue[i]);
+							}
 						}
-						peer->Send(reinterpret_cast<char*>(&message), sizeof(*message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, true);
+						peer->Send(reinterpret_cast<char*>(message), sizeof(*message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, true);
 					}
 					else
 					{

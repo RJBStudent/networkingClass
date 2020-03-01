@@ -67,6 +67,7 @@ void BoidManager::UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 				continue;
 			boids[i]->Update(demoState, (float)demoState->renderTimer->secondsPerTick);
 		}
+		DetectCollisions(true);
 	}
 	break;
 	default:
@@ -114,6 +115,7 @@ void BoidManager::UpdateSingleBoid(int boidIndex, float x, float y)
 	{
 		boids[boidIndex]->position.x = x;
 		boids[boidIndex]->position.y = y;
+		boids[boidIndex]->active = true;
 	}
 }
 
@@ -166,40 +168,30 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 	break;
 	case 3:
 	{
-		if (net->isServer)
-		{
-			
-				/*for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
-				{
-					if (i < 0 || i > boids.size())
-						continue;
-					Vector2Message newMessage;
-					newMessage.messageId = ID_SET_BOID_POS;
-					newMessage.idIndex = i;
-					newMessage.xValue = boids[i]->position.x;
-					newMessage.yValue = boids[i]->position.y;
-					RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
-					peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
-				}*/
-
-			
-		}
-		else
-		{
-			/*for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
+		Vector2Message newMessage;
+		newMessage.messageId = ID_SET_BOID_POS;
+		
+			for (unsigned int i = boidID * BOIDS_PER_USER, j =0; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++, j++)
 			{
 				if (i < 0 || i > boids.size())
 					continue;
-				Vector2Message newMessage;
-				newMessage.messageId = ID_SET_BOID_POS;
-				newMessage.idIndex = i;
-				newMessage.xValue = boids[i]->position.x;
-				newMessage.yValue = boids[i]->position.y;
-				RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
+				newMessage.idIndex[j] = i;
+				newMessage.xValue[j] = boids[i]->position.x;
+				newMessage.yValue[j] = boids[i]->position.y;
+
+									
+			}
+			RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
+			if (net->isServer)
+			{
+
+				peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
+			}
+			else
+			{
 				RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
 				peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);
-			}*/						
-		}
+			}
 	}
 	break;
 	default:
@@ -207,15 +199,19 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 	}
 }
 
-void BoidManager::DetectCollisions()
+void BoidManager::DetectCollisions(bool everyone)
 {
-	for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
+	for (unsigned int i = everyone ? 0: boidID * BOIDS_PER_USER; (int)i < (everyone ? boids.size():(boidID * BOIDS_PER_USER) + BOIDS_PER_USER); i++)
 	{
+		if (!boids[i]->active)
+			continue;
 		float currBoidRadius = boids[i]->radius;
 		Vector2 currBoidPosition = boids[i]->position;
-
-		for (unsigned int j = i + 1 ; (int)j < (boidID * BOIDS_PER_USER )+ BOIDS_PER_USER; j++)
+		
+		for (unsigned int j = i + 1 ; (int)j < (everyone ? boids.size() : (boidID * BOIDS_PER_USER) + BOIDS_PER_USER); j++)
 		{
+			if (!boids[j]->active)
+				continue;
 			float otherBoidRadius = boids[j]->radius;
 			Vector2 otherBoidPosition = boids[j]->position;
 			float dstSquared = (float)((otherBoidPosition.x - currBoidPosition.x) * (otherBoidPosition.x - currBoidPosition.x)) +
@@ -231,4 +227,10 @@ void BoidManager::DetectCollisions()
 			}
 		}
 	}
+}
+
+void BoidManager::SetBoidActive(int boidIndex, bool active)
+{
+	if (boidIndex >= 0 && (unsigned)boidIndex < boids.size())
+		boids[boidIndex]->active = active;
 }
