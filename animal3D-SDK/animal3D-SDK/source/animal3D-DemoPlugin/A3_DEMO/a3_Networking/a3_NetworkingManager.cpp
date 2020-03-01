@@ -34,6 +34,7 @@
 #include "A3_DEMO/EventManager.h"
 #include "A3_DEMO/Event.h"
 #include "../BoidManager.h"
+#include "A3_DEMO/Vector2.h"
 
 
 
@@ -187,6 +188,14 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 						net->connectedAddress = &packet->systemAddress;
 						RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
 						peer->Send(reinterpret_cast<char*>(&connectMessage), sizeof(connectMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);
+
+						for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
+						{
+							float x = (float)(rand() % 100) + -50;
+							float y = (float)(rand() % 100) + -50;
+
+							boidManager->SpawnNewBoid(Vector2(x * 10, y * 10), Vector2(x * 3, y * 3), true, 0, 15);
+						}
 					}
 					break;
 				case ID_NEW_INCOMING_CONNECTION:
@@ -245,7 +254,8 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 				case ID_SET_BOID_ID:
 				{
 					IntMessage* message = (IntMessage*)packet->data;
-					boidManager->boidID = message->intValue;
+					boidManager->boidID = message->intValue;					
+
 				}
 					break;
 

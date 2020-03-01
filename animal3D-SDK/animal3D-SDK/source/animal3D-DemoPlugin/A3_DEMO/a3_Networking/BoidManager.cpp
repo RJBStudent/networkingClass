@@ -42,6 +42,7 @@ void BoidManager::UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 			}
 			DetectCollisions();
 		}
+
 	}
 	break;
 	case 2:
@@ -79,7 +80,7 @@ void BoidManager::RenderBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 	case 1:
 	case 2:
 	{
-		if (net->isServer)	
+		if /*(!net->isServer)*/(true)
 		{
 		for (unsigned int i = 0; i < boids.size(); i++)
 		{
@@ -107,10 +108,10 @@ void BoidManager::RenderBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 
 void BoidManager::UpdateSingleBoid(int boidIndex, float x, float y)
 {
-	if (boidIndex < 0 || (unsigned)boidIndex >= boids.size())
+	if (boidIndex >= 0 || (unsigned)boidIndex < boids.size())
 	{
-		boids[boidID]->position.x = x;
-		boids[boidID]->position.y = y;
+		boids[boidIndex]->position.x = x;
+		boids[boidIndex]->position.y = y;
 	}
 }
 
