@@ -36,6 +36,7 @@
 #include "../BoidManager.h"
 
 
+
 //-----------------------------------------------------------------------------
 // networking stuff
 
@@ -263,6 +264,11 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 					else
 					{
 						//Set positions of boids on client side at message index
+						//boidManager->UpdateSingleBoid();
+						for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
+						{
+							boidManager->UpdateSingleBoid(message->idIndex[i], message->xValue[i], message->yValue[i]);
+						}
 					}
 				}
 					break;

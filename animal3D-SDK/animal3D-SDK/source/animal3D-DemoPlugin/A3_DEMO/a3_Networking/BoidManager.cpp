@@ -123,19 +123,19 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 	{
 		if (net->isServer)
 		{
+			Vector2Message newMessage;
+			newMessage.messageId = ID_SET_BOID_POS;
 			for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
 			{
 				if (i < 0 || i > boids.size())
 					continue;
-				Vector2Message newMessage;
-				newMessage.messageId = ID_SET_BOID_POS;
-				newMessage.idIndex = i;
-				newMessage.xValue = boids[i]->position.x;
-				newMessage.yValue = boids[i]->position.y;
-				RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
-				peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
+				
+				newMessage.idIndex[i - boidID * BOIDS_PER_USER] = i;
+				newMessage.xValue[i - boidID * BOIDS_PER_USER] = boids[i]->position.x;
+				newMessage.yValue[i - boidID * BOIDS_PER_USER] = boids[i]->position.y;
 			}
-
+			RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
+			peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
 		}
 	}
 	break;
@@ -143,7 +143,7 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 	{
 		if (!net->isServer)
 		{
-			for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
+			/*for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
 			{
 				if (i < 0 || i > boids.size())
 					continue;
@@ -155,7 +155,7 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 				RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
 				RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
 				peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);
-			}
+			}*/
 		}
 	}
 	break;
@@ -164,7 +164,7 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 		if (net->isServer)
 		{
 			
-				for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
+				/*for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
 				{
 					if (i < 0 || i > boids.size())
 						continue;
@@ -175,13 +175,13 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 					newMessage.yValue = boids[i]->position.y;
 					RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
 					peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
-				}
+				}*/
 
 			
 		}
 		else
 		{
-			for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
+			/*for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
 			{
 				if (i < 0 || i > boids.size())
 					continue;
@@ -193,7 +193,7 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 				RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
 				RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
 				peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);
-			}						
+			}*/						
 		}
 	}
 	break;
