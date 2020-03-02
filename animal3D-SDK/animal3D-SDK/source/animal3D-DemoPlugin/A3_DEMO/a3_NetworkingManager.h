@@ -36,7 +36,7 @@
 //-----------------------------------------------------------------------------
 
 class EventManager;
-class GameObject;
+class BoidManager;
 struct a3_ChatManager;
 
 //-----------------------------------------------------------------------------
@@ -57,6 +57,18 @@ struct a3_ChatManager;
 		void* connectedAddress;
 
 		int connected;
+
+		int nextUserID = 0;
+
+		enum DataPackagingType
+		{
+			NULL_TYPE = 0,
+			DATA_PUSH,
+			DATA_SHARE,
+			DATA_COUPLED,
+			NUM_OF_TYPES
+		};
+		DataPackagingType dataPackageType;
 	};
 
 
@@ -77,7 +89,7 @@ struct a3_ChatManager;
 
 
 	// process inbound packets
-	a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameObject* go, a3_ChatManager* chat);
+	a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidManager* boidManager, a3_ChatManager* chat);
 
 	// process outbound packets
 	a3i32 a3netProcessOutbound(a3_NetworkingManager* net);

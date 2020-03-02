@@ -33,6 +33,9 @@
 #include "A3_DEMO/NetworkMessages.h"
 #include "A3_DEMO/EventManager.h"
 #include "A3_DEMO/Event.h"
+#include "../BoidManager.h"
+#include "A3_DEMO/Vector2.h"
+
 
 
 //-----------------------------------------------------------------------------
@@ -128,7 +131,7 @@ a3i32 a3netDisconnect(a3_NetworkingManager* net)
 
 
 // process inbound packets
-a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameObject* go, a3_ChatManager* chat)
+a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidManager* boidManager, a3_ChatManager* chat)
 {
 	if (net && net->peer)
 	{
@@ -179,16 +182,14 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameO
 						// Use a BitStream to write a custom user message
 						// Bitstreams are easier to use than sending casted structures, 
 						//	and handle endian swapping automatically
-						RakNet::BitStream bsOut[1];
-						bsOut->Write((RakNet::MessageID)ID_TIMESTAMP);
-						bsOut->Write(RakNet::GetTime());
-						bsOut->Write((RakNet::MessageID)ID_GAME_MESSAGE_1);
-						bsOut->Write("Hello world");
-						peer->Send(bsOut, HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
+						IntMessage connectMessage;
+						connectMessage.intValue = net->dataPackageType;
+						connectMessage.messageId = ID_CONNECTED_MESSAGE;
 						net->connectedAddress = &packet->systemAddress;
-						// ****TO-DO: write timestamped message
-						printf("\n time : %u", (unsigned int)RakNet::GetTime());
+						RakNet::SystemAddress* address = (RakNet::SystemAddress*)net->connectedAddress;
+						peer->Send(reinterpret_cast<char*>(&connectMessage), sizeof(connectMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, *address, false);
 
+						
 					}
 					break;
 				case ID_NEW_INCOMING_CONNECTION:
@@ -222,112 +223,65 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, GameO
 						printf("%s\n", rs.C_String());
 					}
 					break;
-				case ID_MOVE_MESSAGE:
+				case ID_CONNECTED_MESSAGE:
 				{
-
-					MoveMessage* message = (MoveMessage*)packet->data;
-					printf("RECIEVED MOVE MESSAGE\n");
-					
-
+					IntMessage* message = (IntMessage*)packet->data;
 					if (net->isServer)
 					{
-						MoveEvent* move = new MoveEvent(message->x, message->y, go, false);
-						events->AddEvent(move);
-						
-						MoveMessage newMessage;
-						newMessage.messageId = ID_MOVE_MESSAGE;
-						newMessage.x = message->x;
-						newMessage.y = message->y;
-
-						RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
-						peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
-						printf("SENDING OUT\n");
+						IntMessage connectMessage;
+						connectMessage.intValue = net->dataPackageType;
+						connectMessage.messageId = ID_CONNECTED_MESSAGE;
+						peer->Send(reinterpret_cast<char*>(&connectMessage), sizeof(connectMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
+						IntMessage boidIDMessage;
+						net->nextUserID++;
+						boidIDMessage.intValue = net->nextUserID;
+						boidIDMessage.messageId = ID_SET_BOID_ID;
+						peer->Send(reinterpret_cast<char*>(&boidIDMessage), sizeof(boidIDMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, false);
 					}
 					else
 					{
-						MoveEvent* move = new MoveEvent(message->x, message->y, go, false);
-						events->AddEvent(move);
-						printf("ADDING EVENT\n");
+						net->dataPackageType = (a3_NetworkingManager::DataPackagingType)message->intValue;
+						printf("Data receive/send type is : %i", (int)net->dataPackageType);
 					}
 				}
+				break;
+				case ID_SET_BOID_ID:
+				{
+					IntMessage* message = (IntMessage*)packet->data;
+					boidManager->boidID = message->intValue;	
 
+					for (int i = boidManager->boidID * BoidManager::BOIDS_PER_USER; i < (boidManager->boidID *BoidManager::BOIDS_PER_USER) + BoidManager::BOIDS_PER_USER; i++)
+						boidManager->SetBoidActive(i);
+
+				}
 					break;
-				case ID_CHAT_MESSAGE:
+
+				case ID_SET_BOID_POS:
 				{
-					a3_NetChatMessage* message = (a3_NetChatMessage*)packet->data;
+					Vector2Message* message = (Vector2Message*)packet->data;
 					if (net->isServer)
 					{
-						a3_NetChatMessage newMessage;
-						newMessage.typeID = message->typeID;
-						strcpy(newMessage.user, message->user);
-						strcpy(newMessage.message, message->message);
-
-						RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
-						peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
-						printf("SENDING OUT\n");
+						if(net->dataPackageType == net->DATA_COUPLED)
+						{
+							//Set positions of boids on server side
+							for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
+							{
+								boidManager->UpdateSingleBoid(message->idIndex[i], message->xValue[i], message->yValue[i]);
+							}
+						}
+						peer->Send(reinterpret_cast<char*>(message), sizeof(*message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, true);
 					}
 					else
 					{
-						AddMessage(chat, *message);
+						//Set positions of boids on client side at message index
+						//boidManager->UpdateSingleBoid();
+						for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
+						{
+							boidManager->UpdateSingleBoid(message->idIndex[i], message->xValue[i], message->yValue[i]);
+						}
 					}
 				}
-				break;
-				case ID_STRING_MESSAGE:
-				{
-
-					StringMessage* message = (StringMessage*)packet->data;
-					printf("RECIEVED MOVE MESSAGE\n");
-
-
-					if (net->isServer)
-					{
-						StringEvent* move = new StringEvent(message->newString, go, false);
-						events->AddEvent(move);
-
-						StringMessage newMessage;
-						newMessage.messageId = ID_STRING_MESSAGE;
-						strcpy(newMessage.newString, message->newString);
-
-						RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
-						peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
-						printf("SENDING OUT\n");
-					}
-					else
-					{
-						StringEvent* move = new StringEvent(message->newString, go, false);
-						events->AddEvent(move);
-						printf("ADDING EVENT\n");
-					}
-				}
-				case ID_ISRED_MESSAGE:
-				{
-
-					RedMessage* message = (RedMessage*)packet->data;
-					printf("RECIEVED MOVE MESSAGE\n");
-
-
-					if (net->isServer)
-					{
-						BoolEvent* move = new BoolEvent(message->isRed, go, false);
-						events->AddEvent(move);
-
-						RedMessage newMessage;
-						newMessage.messageId = ID_ISRED_MESSAGE;
-						newMessage.isRed = message->isRed;
-
-						RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
-						peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
-						printf("SENDING OUT\n");
-					}
-					else
-					{
-						BoolEvent* move = new BoolEvent(message->isRed, go, false);
-						events->AddEvent(move);
-						printf("ADDING EVENT\n");
-					}
-				}
-
-				break;
+					break;
 				default:
 					printf("Message with identifier %i has arrived.\n", msg);
 					break;

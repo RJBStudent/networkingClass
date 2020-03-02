@@ -14,6 +14,15 @@ public:
 
 	}
 
+	Vector2 operator*(float const &num);
+	Vector2& operator*(const Vector2& val);
+	Vector2& operator+=(const Vector2& val);
+	Vector2& operator-=(const Vector2& val);
+	Vector2 operator+(const Vector2& rhs);
+	Vector2 operator-(const Vector2& rhs);
+	
+	Vector2 normalized();
+
 	float x;
 	float y;
 
