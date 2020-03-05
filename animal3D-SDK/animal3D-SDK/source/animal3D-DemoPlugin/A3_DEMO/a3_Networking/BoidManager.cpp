@@ -120,8 +120,14 @@ void BoidManager::UpdateSingleBoid(int boidIndex, float x, float y)
 }
 
 
-void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
+void BoidManager::ProcessOutbounds(a3_NetworkingManager* net, a3_DemoState* demostate)
 {
+	currentTime += (float)demostate->timer->secondsPerTick;
+	if (currentTime < TIMESTEP)
+	{
+		return;
+	}
+	currentTime = 0.0f;
 	switch (net->dataPackageType)
 	{
 	case 1:

@@ -784,7 +784,7 @@ A3DYLIBSYMBOL void HandleOutput(a3_DemoState* demoState)
 {
 	if (!myGame.net->connected)
 		return;
-	myGame.boidManager->ProcessOutbounds(myGame.net);
+	myGame.boidManager->ProcessOutbounds(myGame.net, demoState);
 	myGame.eventManager->HandleEvents(myGame.net);
 }
 
