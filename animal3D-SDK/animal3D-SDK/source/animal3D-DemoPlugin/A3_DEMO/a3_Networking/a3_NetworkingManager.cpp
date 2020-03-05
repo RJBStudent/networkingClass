@@ -282,6 +282,32 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 					}
 				}
 					break;
+				case ID_SET_BOID_POS_VEL:
+				{
+					//Vector2Message* message = (Vector2Message*)packet->data;
+					//if (net->isServer)
+					//{
+					//	if (net->dataPackageType == net->DATA_COUPLED)
+					//	{
+					//		//Set positions of boids on server side
+					//		for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
+					//		{
+					//			boidManager->UpdateSingleBoid(message->idIndex[i], message->xValue[i], message->yValue[i]);
+					//		}
+					//	}
+					//	peer->Send(reinterpret_cast<char*>(message), sizeof(*message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, true);
+					//}
+					//else
+					//{
+					//	//Set positions of boids on client side at message index
+					//	//boidManager->UpdateSingleBoid();
+					//	for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
+					//	{
+					//		boidManager->UpdateSingleBoid(message->idIndex[i], message->xValue[i], message->yValue[i]);
+					//	}
+					//}
+				}
+				break;
 				default:
 					printf("Message with identifier %i has arrived.\n", msg);
 					break;
