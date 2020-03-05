@@ -57,3 +57,11 @@ Vector2 Vector2::normalized()
 
 	return Vector2(this->x/magnitude, this->y/magnitude);
 }
+
+Vector2 Vector2::lerp(Vector2 a, Vector2 b, float t)
+{
+	float x = (1 - t) * a.x + t * b.x;
+	float y = (1 - t) * a.y + t * b.y;
+
+	return Vector2(x, y);
+}

@@ -24,7 +24,22 @@ void Boid::Update(a3_DemoState* demoState, float dt)
 {
 	if (!active)
 		return;
-	position += velocity * dt;
+
+	if (lerpValue >= 1)
+	{
+		position += velocity * dt;
+	}
+	else
+	{
+		if (lerpValue == 0)
+		{
+			currentPos = position;
+			currentVel = velocity;
+		}
+		position = Vector2::lerp(currentPos, targetPos, lerpValue);
+		velocity = Vector2::lerp(currentVel, targetVel, lerpValue);
+		lerpValue += .1f;
+	}
 
 	a3f32 height = (a3f32)demoState->windowHeight;
 	a3f32 width = (a3f32)demoState->windowWidth;

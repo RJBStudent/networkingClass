@@ -22,8 +22,9 @@ public:
 	Vector2 operator-(const Vector2& rhs);
 	
 	Vector2 normalized();
+	static Vector2 lerp(Vector2 a = Vector2(0, 0), Vector2 b = Vector2(0, 0), float t = 1);
 
 	float x;
 	float y;
-
+	
 };
