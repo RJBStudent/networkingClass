@@ -25,6 +25,8 @@ public:
 	void DetectCollisions(bool everyone = false);
 	void SetBoidActive(int boidIndex, bool active = true);
 
+	Boid* getBoid(int index) { return boids[index]; }
+
 	int boidID = 0;
 
 	const static int BOIDS_PER_USER = 30;
