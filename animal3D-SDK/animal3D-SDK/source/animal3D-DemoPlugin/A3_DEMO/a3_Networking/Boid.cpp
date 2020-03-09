@@ -15,11 +15,11 @@ Boid::Boid(bool activeState, Vector2 newPos, Vector2 newVel, float newRot, float
 	g = newG;
 	myID = newID;
 	lerpValue = 2;
-	/*currentPos = Vector2(-100, -100);
-	targetPos = Vector2(100, 100);
+	currentPos = velocity;
+	targetPos = velocity;
 
-	currentVel = Vector2(0, 0);
-	targetVel = Vector2(0, 100);*/
+	currentVel = newVel;
+	targetVel = newVel;
 }
 
 Boid::~Boid()
@@ -32,9 +32,10 @@ void Boid::Update(a3_DemoState* demoState, float dt)
 	if (!active)
 		return;
 
-	if (lerpValue > 1.05) // 
+	if (lerpValue > 1.05) // 1.05 for leeway
 	{
 		position += velocity * dt;
+
 	}
 	else
 	{
@@ -46,7 +47,7 @@ void Boid::Update(a3_DemoState* demoState, float dt)
 		position = Vector2::lerp(currentPos, targetPos, lerpValue);
 		velocity = Vector2::lerp(currentVel, targetVel, lerpValue);
 		lerpValue += .1f;
-		printf("LerpValue %f \n", lerpValue);
+
 	}
 
 	a3f32 height = (a3f32)demoState->windowHeight;

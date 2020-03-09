@@ -61,7 +61,7 @@ void BoidManager::UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 	break;
 	case 3:
 	{
-		for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
+		for (unsigned int i = 0; (int)i < boids.size(); i++)
 		{
 			if (i < 0 || i > boids.size())
 				continue;

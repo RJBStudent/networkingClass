@@ -306,22 +306,17 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 					}
 					else
 					{
-						printf("recieved lerp message");
-						//Set positions of boids on client side at message index
-						//boidManager->UpdateSingleBoid();
 						bool isMyBoids = (message->idIndex[0]/ BoidManager::BOIDS_PER_USER == boidManager->boidID);
 
 						if (!isMyBoids)
 						{
 							for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
 							{
-								//boidManager->UpdateSingleBoid(message->idIndex[i], message->xValue[i], message->yValue[i]);
 								int boidIndex = message->idIndex[i];
-								boidManager->getBoid(boidIndex)->currentPos = boidManager->getBoid(boidIndex)->position;
-								boidManager->getBoid(boidIndex)->currentVel = boidManager->getBoid(boidIndex)->velocity;
 
 								boidManager->getBoid(boidIndex)->targetPos = Vector2(message->xValue[i * 2], message->yValue[i * 2]);
 								boidManager->getBoid(boidIndex)->targetVel = Vector2(message->xValue[i * 2 + 1], message->yValue[i * 2 + 1]);
+
 								boidManager->getBoid(boidIndex)->lerpValue = 0;
 							}
 						}
