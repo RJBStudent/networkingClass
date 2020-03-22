@@ -2,6 +2,7 @@
 #include "A3_DEMO/a3_DemoState.h"
 #include "animal3D/animal3D.h"
 #include <stdio.h>
+#include <cstdlib>
 
 Boid::Boid(bool activeState, Vector2 newPos, Vector2 newVel, float newRot, float newRadius, float newR, float newG, float newB, int newID)
 {
@@ -46,7 +47,7 @@ void Boid::Update(a3_DemoState* demoState, float dt)
 		}
 		position = Vector2::lerp(currentPos, targetPos, lerpValue);
 		velocity = Vector2::lerp(currentVel, targetVel, lerpValue);
-		lerpValue += .1f;
+		lerpValue += .2f;
 
 	}
 
@@ -55,19 +56,27 @@ void Boid::Update(a3_DemoState* demoState, float dt)
 
 	if (position.x > width)
 	{
-		position.x = -width;
+		//position.x = -width;
+		
+		velocity.x = -abs(velocity.x);
 	}
 	if (position.x < -width)
 	{
-		position.x = width;
+		//position.x = width;
+		velocity.x = abs(velocity.x);
+
 	}
 	if (position.y > height)
 	{
-		position.y = -height;
+		//position.y = -height;
+		velocity.y = -abs(velocity.y);
+
 	}
 	if (position.y < -height)
 	{
-		position.y = height;
+		//position.y = height;
+		velocity.y = abs(velocity.y);
+
 	}
 
 }

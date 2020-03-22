@@ -31,7 +31,7 @@ public:
 
 	const static int BOIDS_PER_USER = 30;
 
-	const float TIMESTEP = 2.0f;
+	const float TIMESTEP = 1.0f;
 
 private:
 	std::vector<Boid*> boids;

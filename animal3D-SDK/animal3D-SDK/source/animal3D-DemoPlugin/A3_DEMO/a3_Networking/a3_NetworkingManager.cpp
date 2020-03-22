@@ -300,6 +300,7 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 								boidManager->getBoid(boidIndex)->targetPos = Vector2(message->xValue[i * 2], message->yValue[i * 2]);
 								boidManager->getBoid(boidIndex)->targetVel = Vector2(message->xValue[i * 2 + 1], message->yValue[i * 2 + 1]);
 								boidManager->getBoid(boidIndex)->lerpValue = 0;
+								boidManager->getBoid(boidIndex)->active = true;
 							}
 						}
 						peer->Send(reinterpret_cast<char*>(message), sizeof(*message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, true);
@@ -318,6 +319,8 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 								boidManager->getBoid(boidIndex)->targetVel = Vector2(message->xValue[i * 2 + 1], message->yValue[i * 2 + 1]);
 
 								boidManager->getBoid(boidIndex)->lerpValue = 0;
+								boidManager->getBoid(boidIndex)->active = true;
+
 							}
 						}
 					}
