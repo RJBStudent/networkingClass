@@ -18,17 +18,23 @@ public:
 
 	void RenderBoids(a3_NetworkingManager* net, a3_DemoState* demoState);
 
-	void ProcessOutbounds(a3_NetworkingManager* net);
+	void ProcessOutbounds(a3_NetworkingManager* net, a3_DemoState* demostate);
 
 	void UpdateSingleBoid(int boidIndex, float x, float y);
 
 	void DetectCollisions(bool everyone = false);
 	void SetBoidActive(int boidIndex, bool active = true);
 
+	Boid* getBoid(int index) { return boids[index]; }
+
 	int boidID = 0;
 
 	const static int BOIDS_PER_USER = 30;
 
+	const float TIMESTEP = 1.0f;
+
 private:
 	std::vector<Boid*> boids;
+
+	float currentTime = 0.0f;
 };

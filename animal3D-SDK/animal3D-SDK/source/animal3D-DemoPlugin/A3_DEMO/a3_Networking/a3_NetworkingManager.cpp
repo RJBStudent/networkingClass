@@ -35,6 +35,7 @@
 #include "A3_DEMO/Event.h"
 #include "../BoidManager.h"
 #include "A3_DEMO/Vector2.h"
+#include "../Boid.h"
 
 
 
@@ -282,6 +283,49 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 					}
 				}
 					break;
+				case ID_SET_BOID_POS_VEL:
+				{
+					Vector2Message* message = (Vector2Message*)packet->data;
+					if (net->isServer)
+					{
+						if (net->dataPackageType == net->DATA_COUPLED)
+						{
+							//Set positions of boids on server side
+							for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
+							{
+								int boidIndex = message->idIndex[i];
+								boidManager->getBoid(boidIndex)->currentPos = boidManager->getBoid(boidIndex)->position;
+								boidManager->getBoid(boidIndex)->currentVel = boidManager->getBoid(boidIndex)->velocity;
+
+								boidManager->getBoid(boidIndex)->targetPos = Vector2(message->xValue[i * 2], message->yValue[i * 2]);
+								boidManager->getBoid(boidIndex)->targetVel = Vector2(message->xValue[i * 2 + 1], message->yValue[i * 2 + 1]);
+								boidManager->getBoid(boidIndex)->lerpValue = 0;
+								boidManager->getBoid(boidIndex)->active = true;
+							}
+						}
+						peer->Send(reinterpret_cast<char*>(message), sizeof(*message), HIGH_PRIORITY, RELIABLE_ORDERED, 0, packet->systemAddress, true);
+					}
+					else
+					{
+						bool isMyBoids = (message->idIndex[0]/ BoidManager::BOIDS_PER_USER == boidManager->boidID);
+
+						if (!isMyBoids)
+						{
+							for (int i = 0; i < BoidManager::BOIDS_PER_USER; i++)
+							{
+								int boidIndex = message->idIndex[i];
+
+								boidManager->getBoid(boidIndex)->targetPos = Vector2(message->xValue[i * 2], message->yValue[i * 2]);
+								boidManager->getBoid(boidIndex)->targetVel = Vector2(message->xValue[i * 2 + 1], message->yValue[i * 2 + 1]);
+
+								boidManager->getBoid(boidIndex)->lerpValue = 0;
+								boidManager->getBoid(boidIndex)->active = true;
+
+							}
+						}
+					}
+				}
+				break;
 				default:
 					printf("Message with identifier %i has arrived.\n", msg);
 					break;

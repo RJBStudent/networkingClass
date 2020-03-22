@@ -19,4 +19,10 @@ public:
 	float radius = 0;
 	float r, g, b;
 	int myID;
+
+	Vector2 currentPos = Vector2(0, 0);
+	Vector2 targetPos = Vector2(0, 0);
+	Vector2 currentVel = Vector2(0, 0);
+	Vector2 targetVel = Vector2(0, 0);
+	float lerpValue;
 };

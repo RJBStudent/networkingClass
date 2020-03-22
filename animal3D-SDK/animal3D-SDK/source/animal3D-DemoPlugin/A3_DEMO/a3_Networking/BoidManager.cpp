@@ -61,7 +61,7 @@ void BoidManager::UpdateBoids(a3_NetworkingManager* net, a3_DemoState* demoState
 	break;
 	case 3:
 	{
-		for (unsigned int i = boidID * BOIDS_PER_USER; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++)
+		for (unsigned int i = 0; (int)i < boids.size(); i++)
 		{
 			if (i < 0 || i > boids.size())
 				continue;
@@ -120,8 +120,14 @@ void BoidManager::UpdateSingleBoid(int boidIndex, float x, float y)
 }
 
 
-void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
+void BoidManager::ProcessOutbounds(a3_NetworkingManager* net, a3_DemoState* demostate)
 {
+	currentTime += (float)demostate->timer->secondsPerTick;
+	if (currentTime < TIMESTEP)
+	{
+		return;
+	}
+	currentTime = 0.0f;
 	switch (net->dataPackageType)
 	{
 	case 1:
@@ -169,22 +175,23 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net)
 	case 3:
 	{
 		Vector2Message newMessage;
-		newMessage.messageId = ID_SET_BOID_POS;
+		newMessage.messageId = ID_SET_BOID_POS_VEL;
 		
 			for (unsigned int i = boidID * BOIDS_PER_USER, j =0; (int)i < (boidID * BOIDS_PER_USER) + BOIDS_PER_USER; i++, j++)
 			{
 				if (i < 0 || i > boids.size())
 					continue;
 				newMessage.idIndex[j] = i;
-				newMessage.xValue[j] = boids[i]->position.x;
-				newMessage.yValue[j] = boids[i]->position.y;
-
-									
+				//POSITIONS
+				newMessage.xValue[j*2] = boids[i]->position.x;
+				newMessage.yValue[j*2] = boids[i]->position.y;
+				//VELOCITIES
+				newMessage.xValue[j*2+1] = boids[i]->velocity.x;
+				newMessage.yValue[j*2+1] = boids[i]->velocity.y;
 			}
 			RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
 			if (net->isServer)
 			{
-
 				peer->Send(reinterpret_cast<char*>(&newMessage), sizeof(newMessage), HIGH_PRIORITY, RELIABLE_ORDERED, 0, peer->GetMyBoundAddress(), true);
 			}
 			else
