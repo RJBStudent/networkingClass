@@ -72,5 +72,6 @@ struct Vector2Message
 	float xValue[60];
 	float yValue[60];
 	int idIndex[30];
+	unsigned int sendTime;
 };
 #pragma pack(pop)

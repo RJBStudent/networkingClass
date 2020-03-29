@@ -4,6 +4,7 @@
 #include "../a3_DemoState.h"
 #include "../NetworkMessages.h"
 #include "RakNet/RakPeerInterface.h"
+#include "RakNet/GetTime.h"
 
 BoidManager::BoidManager()
 {
@@ -189,6 +190,9 @@ void BoidManager::ProcessOutbounds(a3_NetworkingManager* net, a3_DemoState* demo
 				newMessage.xValue[j*2+1] = boids[i]->velocity.x;
 				newMessage.yValue[j*2+1] = boids[i]->velocity.y;
 			}
+			newMessage.sendTime = (unsigned int)RakNet::GetTime();
+
+
 			RakNet::RakPeerInterface* peer = (RakNet::RakPeerInterface*)net->peer;
 			if (net->isServer)
 			{

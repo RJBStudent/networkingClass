@@ -286,6 +286,12 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 				case ID_SET_BOID_POS_VEL:
 				{
 					Vector2Message* message = (Vector2Message*)packet->data;
+
+					RakNet::Time sendTime, dt, receiveTime;
+					sendTime = message->sendTime;
+					receiveTime = RakNet::GetTime();
+					dt = receiveTime - sendTime;
+
 					if (net->isServer)
 					{
 						if (net->dataPackageType == net->DATA_COUPLED)
@@ -297,8 +303,13 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 								boidManager->getBoid(boidIndex)->currentPos = boidManager->getBoid(boidIndex)->position;
 								boidManager->getBoid(boidIndex)->currentVel = boidManager->getBoid(boidIndex)->velocity;
 
-								boidManager->getBoid(boidIndex)->targetPos = Vector2(message->xValue[i * 2], message->yValue[i * 2]);
-								boidManager->getBoid(boidIndex)->targetVel = Vector2(message->xValue[i * 2 + 1], message->yValue[i * 2 + 1]);
+								Vector2 targetPos, targetVel;
+								targetVel = Vector2(message->xValue[i * 2 + 1], message->yValue[i * 2 + 1]);
+								targetPos = Vector2(message->xValue[i * 2], message->yValue[i * 2]);
+								targetPos += targetVel * (float)dt;
+
+								boidManager->getBoid(boidIndex)->targetPos = targetPos;
+								boidManager->getBoid(boidIndex)->targetVel = targetVel;
 								boidManager->getBoid(boidIndex)->lerpValue = 0;
 								boidManager->getBoid(boidIndex)->active = true;
 							}
@@ -315,8 +326,13 @@ a3i32 a3netProcessInbound(a3_NetworkingManager* net, EventManager* events, BoidM
 							{
 								int boidIndex = message->idIndex[i];
 
-								boidManager->getBoid(boidIndex)->targetPos = Vector2(message->xValue[i * 2], message->yValue[i * 2]);
-								boidManager->getBoid(boidIndex)->targetVel = Vector2(message->xValue[i * 2 + 1], message->yValue[i * 2 + 1]);
+								Vector2 targetPos, targetVel;
+								targetVel = Vector2(message->xValue[i * 2 + 1], message->yValue[i * 2 + 1]);
+								targetPos = Vector2(message->xValue[i * 2], message->yValue[i * 2]);
+								targetPos += targetVel * (float)dt;
+
+								boidManager->getBoid(boidIndex)->targetPos = targetPos;
+								boidManager->getBoid(boidIndex)->targetVel = targetVel;
 
 								boidManager->getBoid(boidIndex)->lerpValue = 0;
 								boidManager->getBoid(boidIndex)->active = true;
